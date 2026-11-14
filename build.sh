@@ -1,5 +1,6 @@
 #!/bin/bash
 # Builds Shot.app from main.swift. Run: ./build.sh
+# The app runs on both Apple Silicon and Intel Macs, macOS 13 or later.
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -7,7 +8,12 @@ APP="Shot.app"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS"
 
-swiftc -swift-version 5 -O main.swift -o "$APP/Contents/MacOS/Shot"
+TMP="$(mktemp -d)"
+for ARCH in arm64 x86_64; do
+    swiftc -swift-version 5 -O -target "$ARCH-apple-macos13.0" main.swift -o "$TMP/Shot-$ARCH"
+done
+lipo -create "$TMP/Shot-arm64" "$TMP/Shot-x86_64" -output "$APP/Contents/MacOS/Shot"
+rm -rf "$TMP"
 
 cat > "$APP/Contents/Info.plist" <<'EOF'
 <?xml version="1.0" encoding="UTF-8"?>
