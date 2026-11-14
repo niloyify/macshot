@@ -1,0 +1,7 @@
+# Built app (run ./build.sh to make it)
+Shot.app/
+# Personal screenshots
+Screenshots/
+*.png
+*.jpg
+.DS_Store
