@@ -1,7 +1,7 @@
 import Cocoa
 import Carbon.HIToolbox
 
-// Shot: a tiny menu bar screenshot tool.
+// MacShot: a tiny menu bar screenshot tool.
 // Captures an area, a window, or the full screen with macOS's own
 // `screencapture`, saves the PNG to ~/ScreenshotTool/Screenshots and
 // copies it to the clipboard.
@@ -27,11 +27,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         try? FileManager.default.createDirectory(at: saveDir, withIntermediateDirectories: true)
 
-        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = statusItem.button {
-            button.image = NSImage(systemSymbolName: "camera.viewfinder",
-                                   accessibilityDescription: "Screenshot")
+            button.setAccessibilityLabel("MacShot")
+            button.image = eyesImage(look: .zero, open: 1)
         }
+        startEyes()
 
         let menu = NSMenu()
         menu.addItem(item("Capture Area", #selector(captureArea), "1"))
@@ -40,7 +41,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(.separator())
         menu.addItem(item("Open Screenshots Folder", #selector(openFolder), "o"))
         menu.addItem(.separator())
-        menu.addItem(item("Quit Shot", #selector(quit), "q"))
+        menu.addItem(item("Quit MacShot", #selector(quit), "q"))
         statusItem.menu = menu
 
         // `--test-full` takes one full-screen capture and quits (used to verify the build).
@@ -56,6 +57,84 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 CGRequestScreenCaptureAccess()
             }
         }
+    }
+
+    // MARK: Animated eyes in the menu bar
+
+    var look = CGPoint.zero        // where the pupils point, each axis -1...1
+    var eyeOpen: CGFloat = 1       // 1 = open, 0 = closed
+    var blinkStart: Date?
+    var nextBlink = Date().addingTimeInterval(3)
+
+    /// The eyes follow the mouse pointer and blink every few seconds.
+    func startEyes() {
+        let timer = Timer(timeInterval: 1.0 / 20.0, repeats: true) { [weak self] _ in
+            self?.updateEyes()
+        }
+        RunLoop.main.add(timer, forMode: .common) // keeps moving while the menu is open
+    }
+
+    func updateEyes() {
+        guard let button = statusItem.button, let window = button.window else { return }
+        let frame = window.convertToScreen(button.convert(button.bounds, to: nil))
+        let mouse = NSEvent.mouseLocation
+        let dx = mouse.x - frame.midX, dy = mouse.y - frame.midY
+        let distance = max(sqrt(dx * dx + dy * dy), 1)
+        let reach = min(distance / 150, 1)
+        let target = CGPoint(x: dx / distance * reach, y: dy / distance * reach)
+
+        let now = Date()
+        if blinkStart == nil, now >= nextBlink { blinkStart = now }
+        var open: CGFloat = 1
+        if let start = blinkStart {
+            let t = now.timeIntervalSince(start) / 0.25   // one blink takes a quarter second
+            if t >= 1 {
+                blinkStart = nil
+                nextBlink = now.addingTimeInterval(Double.random(in: 3...7))
+            } else {
+                open = CGFloat(abs(t * 2 - 1))            // close, then open again
+            }
+        }
+
+        // Redraw only when something changed, so the app stays idle otherwise.
+        if abs(target.x - look.x) < 0.02, abs(target.y - look.y) < 0.02, open == eyeOpen { return }
+        look = target
+        eyeOpen = open
+        button.image = eyesImage(look: look, open: open)
+    }
+
+    /// Two eyes on a blue rounded square, like the app icon.
+    func eyesImage(look: CGPoint, open: CGFloat) -> NSImage {
+        let image = NSImage(size: NSSize(width: 28, height: 20), flipped: false) { rect in
+            NSColor(red: 0.20, green: 0.47, blue: 0.96, alpha: 1).setFill()
+            NSBezierPath(roundedRect: rect, xRadius: 5.5, yRadius: 5.5).fill()
+
+            for centerX in [CGFloat(8.5), CGFloat(19.5)] {
+                let eyeWidth: CGFloat = 8.5
+                let eyeHeight = max(13 * open, 1.5)
+                let eye = NSRect(x: centerX - eyeWidth / 2, y: 10 - eyeHeight / 2,
+                                 width: eyeWidth, height: eyeHeight)
+                let outline = NSBezierPath(ovalIn: eye)
+                NSColor.white.setFill()
+                outline.fill()
+
+                NSGraphicsContext.saveGraphicsState()
+                outline.addClip() // the closing lid hides the iris
+                let iris = NSRect(x: centerX + look.x * 1.7 - 2.6, y: 10 + look.y * 3.2 - 2.6,
+                                  width: 5.2, height: 5.2)
+                NSColor(red: 0.55, green: 0.27, blue: 0.07, alpha: 1).setFill()
+                NSBezierPath(ovalIn: iris).fill()
+                NSColor.black.setFill()
+                NSBezierPath(ovalIn: iris.insetBy(dx: 1.2, dy: 1.2)).fill()
+                NSColor.white.setFill()
+                NSBezierPath(ovalIn: NSRect(x: iris.midX + 0.2, y: iris.midY + 0.2,
+                                            width: 1.3, height: 1.3)).fill()
+                NSGraphicsContext.restoreGraphicsState()
+            }
+            return true
+        }
+        image.isTemplate = false
+        return image
     }
 
     func item(_ title: String, _ action: Selector, _ key: String) -> NSMenuItem {
@@ -137,8 +216,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func showPermissionHelp() {
         let alert = NSAlert()
-        alert.messageText = "Shot could not capture the screen"
-        alert.informativeText = "Allow Shot under System Settings → Privacy & Security → Screen & System Audio Recording, then try again."
+        alert.messageText = "MacShot could not capture the screen"
+        alert.informativeText = "Allow MacShot under System Settings → Privacy & Security → Screen & System Audio Recording, then try again."
         alert.addButton(withTitle: "Open Settings")
         alert.addButton(withTitle: "Cancel")
         NSApp.activate(ignoringOtherApps: true)

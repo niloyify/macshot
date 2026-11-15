@@ -1,5 +1,5 @@
 # Built app (run ./build.sh to make it)
-Shot.app/
+MacShot.app/
 # Personal screenshots
 Screenshots/
 *.png
