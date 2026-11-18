@@ -1,5 +1,7 @@
 # MacShot
 
+> Need it on **Windows or Linux** too? See [ShotKit](shotkit/README.md), the cross-platform version in this repo.
+
 A tiny menu bar screenshot and screen recording tool for macOS.
 
 - **Capture Area** — Option+Shift+1

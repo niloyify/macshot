@@ -1,0 +1,77 @@
+{
+  "name": "shotkit",
+  "productName": "ShotKit",
+  "version": "1.0.0",
+  "description": "Screenshot and screen recording tool for Windows, macOS and Linux",
+  "main": "src/main.js",
+  "author": "niloyify",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --publish never"
+  },
+  "devDependencies": {
+    "electron": "33.2.1",
+    "electron-builder": "25.1.8"
+  },
+  "build": {
+    "appId": "io.github.niloyify.shotkit",
+    "productName": "ShotKit",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "target": [
+        {
+          "target": "dir",
+          "arch": [
+            "universal"
+          ]
+        }
+      ],
+      "category": "public.app-category.utilities",
+      "identity": null,
+      "extendInfo": {
+        "LSUIElement": true,
+        "NSMicrophoneUsageDescription": "ShotKit records your voice with screen recordings.",
+        "NSScreenCaptureUsageDescription": "ShotKit takes screenshots and records the screen."
+      }
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": true,
+      "artifactName": "ShotKit-Setup-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "ShotKit-Portable-${version}.${ext}"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Utility",
+      "maintainer": "niloyify"
+    }
+  }
+}
