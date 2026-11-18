@@ -4,7 +4,10 @@
   "version": "1.0.0",
   "description": "Screenshot and screen recording tool for Windows, macOS and Linux",
   "main": "src/main.js",
-  "author": "niloyify",
+  "author": {
+    "name": "niloyify",
+    "email": "niloyify@users.noreply.github.com"
+  },
   "license": "MIT",
   "scripts": {
     "start": "electron .",
@@ -71,7 +74,8 @@
         "deb"
       ],
       "category": "Utility",
-      "maintainer": "niloyify"
+      "maintainer": "niloyify <niloyify@users.noreply.github.com>"
     }
-  }
+  },
+  "homepage": "https://github.com/niloyify/macshot/tree/main/shotkit"
 }
