@@ -1,13 +1,16 @@
 # MacShot
 
-A tiny menu bar screenshot tool for macOS.
+A tiny menu bar screenshot and screen recording tool for macOS.
 
 - **Capture Area** — Option+Shift+1
 - **Capture Window** — Option+Shift+2
 - **Capture Full Screen** — Option+Shift+3
-- **Open Screenshots Folder**
+- **Start / Stop Recording** — Option+Shift+5 (macOS 15 or later)
+- **Open Screenshots Folder** / **Open Recordings Folder**
 
 Each capture is saved as a PNG in `~/ScreenshotTool/Screenshots` and copied to the clipboard.
+
+Screen recordings capture the main screen with the Mac's own sound (music, videos) and your microphone, and are saved as `.mov` files in `~/ScreenshotTool/Recordings`. While recording, the eyes in the menu bar sit on a **red** square; press Option+Shift+5 again (or choose Stop Recording) to save.
 
 ## Download and install
 
@@ -17,7 +20,7 @@ Works on Apple Silicon and Intel Macs with macOS 13 or later.
 2. Unzip it and move **MacShot** to your **Applications** folder.
 3. Open **MacShot**. macOS will block it the first time, because the app is not notarized by Apple.
 4. Go to System Settings → Privacy & Security, scroll down and click **Open Anyway**, then open **MacShot** again.
-5. Allow **MacShot** under System Settings → Privacy & Security → Screen & System Audio Recording, then quit and reopen it.
+5. Allow **MacShot** under System Settings → Privacy & Security → Screen & System Audio Recording, then quit and reopen it. For recordings with your voice, also click **Allow** when MacShot asks for the microphone.
 
 A pair of eyes on a blue square appears in the menu bar. They follow your mouse pointer and blink. Click it, or use the shortcuts above.
 

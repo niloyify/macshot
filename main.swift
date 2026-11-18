@@ -1,10 +1,11 @@
 import Cocoa
 import Carbon.HIToolbox
+import AVFoundation
 
 // MacShot: a tiny menu bar screenshot tool.
 // Captures an area, a window, or the full screen with macOS's own
 // `screencapture`, saves the PNG to ~/ScreenshotTool/Screenshots and
-// copies it to the clipboard.
+// copies it to the clipboard. It also records the screen (recorder.swift).
 
 let saveDir = FileManager.default.homeDirectoryForCurrentUser
     .appendingPathComponent("ScreenshotTool/Screenshots", isDirectory: true)
@@ -39,7 +40,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(item("Capture Window", #selector(captureWindow), "2"))
         menu.addItem(item("Capture Full Screen", #selector(captureFull), "3"))
         menu.addItem(.separator())
+        recordItem = item("Start Recording", #selector(toggleRecording), "5")
+        if #unavailable(macOS 15) {
+            recordItem.title = "Start Recording (needs macOS 15)"
+            recordItem.action = nil
+        }
+        menu.addItem(recordItem)
+        menu.addItem(.separator())
         menu.addItem(item("Open Screenshots Folder", #selector(openFolder), "o"))
+        menu.addItem(item("Open Recordings Folder", #selector(openRecordings), "r"))
         menu.addItem(.separator())
         menu.addItem(item("Quit MacShot", #selector(quit), "q"))
         statusItem.menu = menu
@@ -49,6 +58,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             FileHandle.standardError.write(
                 "screen permission: \(CGPreflightScreenCaptureAccess())\n".data(using: .utf8)!)
             capture(.full) { _ in NSApp.terminate(nil) }
+        } else if let i = CommandLine.arguments.firstIndex(of: "--test-record") {
+            // `--test-record N` records N seconds (default 5), prints the file and quits.
+            let seconds = CommandLine.arguments.dropFirst(i + 1).first.flatMap(Double.init) ?? 5
+            testRecording(seconds: seconds)
         } else {
             registerHotKeys()
             // Ask macOS for Screen Recording permission up front, so the
@@ -97,16 +110,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         // Redraw only when something changed, so the app stays idle otherwise.
-        if abs(target.x - look.x) < 0.02, abs(target.y - look.y) < 0.02, open == eyeOpen { return }
+        if abs(target.x - look.x) < 0.02, abs(target.y - look.y) < 0.02, open == eyeOpen,
+           drawnRecording == isRecording { return }
         look = target
         eyeOpen = open
+        drawnRecording = isRecording
         button.image = eyesImage(look: look, open: open)
     }
 
+    var drawnRecording = false
+
     /// Two eyes on a blue rounded square, like the app icon.
+    /// The square turns red while the screen is being recorded.
     func eyesImage(look: CGPoint, open: CGFloat) -> NSImage {
+        let red = isRecording
         let image = NSImage(size: NSSize(width: 28, height: 20), flipped: false) { rect in
-            NSColor(red: 0.20, green: 0.47, blue: 0.96, alpha: 1).setFill()
+            (red ? NSColor(red: 0.90, green: 0.16, blue: 0.16, alpha: 1)
+                 : NSColor(red: 0.20, green: 0.47, blue: 0.96, alpha: 1)).setFill()
             NSBezierPath(roundedRect: rect, xRadius: 5.5, yRadius: 5.5).fill()
 
             for centerX in [CGFloat(8.5), CGFloat(19.5)] {
@@ -140,15 +160,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func item(_ title: String, _ action: Selector, _ key: String) -> NSMenuItem {
         let menuItem = NSMenuItem(title: title, action: action, keyEquivalent: key)
         menuItem.target = self
-        // The capture items show their global shortcut: Option+Shift+1/2/3.
-        if ["1", "2", "3"].contains(key) {
+        // These items show their global shortcut: Option+Shift+1/2/3/5.
+        if ["1", "2", "3", "5"].contains(key) {
             menuItem.keyEquivalentModifierMask = [.option, .shift]
         }
         return menuItem
     }
 
     /// Global shortcuts that work from any app: Option+Shift+1 (area),
-    /// Option+Shift+2 (window), Option+Shift+3 (full screen).
+    /// Option+Shift+2 (window), Option+Shift+3 (full screen),
+    /// Option+Shift+5 (start or stop screen recording).
     func registerHotKeys() {
         var spec = EventTypeSpec(eventClass: OSType(kEventClassKeyboard),
                                  eventKind: UInt32(kEventHotKeyPressed))
@@ -164,13 +185,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 case 1: app.capture(.area)
                 case 2: app.capture(.window)
                 case 3: app.capture(.full)
+                case 5: app.toggleRecording()
                 default: break
                 }
             }
             return noErr
         }, 1, &spec, nil, nil)
 
-        let keys: [(UInt32, Int)] = [(1, kVK_ANSI_1), (2, kVK_ANSI_2), (3, kVK_ANSI_3)]
+        let keys: [(UInt32, Int)] = [(1, kVK_ANSI_1), (2, kVK_ANSI_2), (3, kVK_ANSI_3), (5, kVK_ANSI_5)]
         for (id, keyCode) in keys {
             var ref: EventHotKeyRef?
             RegisterEventHotKey(UInt32(keyCode), UInt32(optionKey | shiftKey),
@@ -183,7 +205,95 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc func captureWindow() { capture(.window) }
     @objc func captureFull() { capture(.full) }
     @objc func openFolder() { NSWorkspace.shared.open(saveDir) }
-    @objc func quit() { NSApp.terminate(nil) }
+    @objc func openRecordings() {
+        try? FileManager.default.createDirectory(at: recordingsDir, withIntermediateDirectories: true)
+        NSWorkspace.shared.open(recordingsDir)
+    }
+    @objc func quit() {
+        // Save a running recording before quitting.
+        if isRecording, #available(macOS 15, *), let recorder = recorder as? ScreenRecorder {
+            recorder.onFinish = { _, _ in NSApp.terminate(nil) }
+            recorder.stop()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 5) { NSApp.terminate(nil) }
+            return
+        }
+        NSApp.terminate(nil)
+    }
+
+    // MARK: Screen recording
+
+    var recordItem: NSMenuItem!
+    var recorder: AnyObject?   // a ScreenRecorder on macOS 15 and later
+    var isRecording: Bool {
+        if #available(macOS 15, *) { return (recorder as? ScreenRecorder)?.isRecording ?? false }
+        return false
+    }
+
+    @objc func toggleRecording() {
+        guard #available(macOS 15, *) else { return }
+        let recorder = (self.recorder as? ScreenRecorder) ?? ScreenRecorder()
+        self.recorder = recorder
+        if recorder.isRecording {
+            recorder.stop()
+            return
+        }
+        recorder.onFinish = { [weak self] file, error in
+            self?.recordItem.title = "Start Recording"
+            if let file {
+                NSWorkspace.shared.activateFileViewerSelecting([file])
+            } else if let error {
+                self?.showRecordingError(error)
+            }
+        }
+        recordItem.title = "Starting…"
+        // Ask for the microphone first; record without it if the user says no.
+        AVCaptureDevice.requestAccess(for: .audio) { micAllowed in
+            Task { @MainActor in
+                do {
+                    try await recorder.start(microphone: micAllowed)
+                    self.recordItem.title = "Stop Recording"
+                } catch {
+                    self.recordItem.title = "Start Recording"
+                    self.showRecordingError(error)
+                }
+            }
+        }
+    }
+
+    func showRecordingError(_ error: Error) {
+        let alert = NSAlert()
+        alert.messageText = "MacShot could not record the screen"
+        alert.informativeText = error.localizedDescription
+            + "\n\nCheck that MacShot is allowed under System Settings → Privacy & Security → Screen & System Audio Recording (and Microphone)."
+        alert.addButton(withTitle: "Open Settings")
+        alert.addButton(withTitle: "Cancel")
+        NSApp.activate(ignoringOtherApps: true)
+        if alert.runModal() == .alertFirstButtonReturn,
+           let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
+            NSWorkspace.shared.open(url)
+        }
+    }
+
+    func testRecording(seconds: Double) {
+        func log(_ text: String) { FileHandle.standardError.write((text + "\n").data(using: .utf8)!) }
+        guard #available(macOS 15, *) else { log("needs macOS 15"); exit(2) }
+        let recorder = ScreenRecorder()
+        self.recorder = recorder
+        recorder.onFinish = { file, error in
+            log("finished: \(file?.path ?? "no file") \(error.map { "\($0)" } ?? "")")
+            exit(file == nil ? 1 : 0)
+        }
+        Task { @MainActor in
+            do {
+                try await recorder.start(microphone: AVCaptureDevice.authorizationStatus(for: .audio) == .authorized)
+                log("recording to \(recorder.file!.path)")
+                DispatchQueue.main.asyncAfter(deadline: .now() + seconds) { recorder.stop() }
+            } catch {
+                log("start failed: \(error)")
+                exit(1)
+            }
+        }
+    }
 
     func capture(_ mode: Mode, completion: ((Bool) -> Void)? = nil) {
         let formatter = DateFormatter()

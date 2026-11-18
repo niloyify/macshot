@@ -6,3 +6,6 @@ Screenshots/
 *.jpg
 .DS_Store
 *.zip
+# Personal screen recordings
+Recordings/
+*.mov

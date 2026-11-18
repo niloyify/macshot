@@ -1,5 +1,5 @@
 #!/bin/bash
-# Builds MacShot.app from main.swift. Run: ./build.sh
+# Builds MacShot.app from main.swift and recorder.swift. Run: ./build.sh
 # The app runs on both Apple Silicon and Intel Macs, macOS 13 or later.
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -10,7 +10,7 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 
 TMP="$(mktemp -d)"
 for ARCH in arm64 x86_64; do
-    swiftc -swift-version 5 -O -target "$ARCH-apple-macos13.0" main.swift -o "$TMP/MacShot-$ARCH"
+    swiftc -swift-version 5 -O -target "$ARCH-apple-macos13.0" main.swift recorder.swift -o "$TMP/MacShot-$ARCH"
 done
 lipo -create "$TMP/MacShot-arm64" "$TMP/MacShot-x86_64" -output "$APP/Contents/MacOS/MacShot"
 
@@ -35,9 +35,10 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
     <key>CFBundleExecutable</key><string>MacShot</string>
     <key>CFBundleIconFile</key><string>MacShot</string>
     <key>CFBundlePackageType</key><string>APPL</string>
-    <key>CFBundleShortVersionString</key><string>1.1</string>
+    <key>CFBundleShortVersionString</key><string>1.2</string>
     <key>LSMinimumSystemVersion</key><string>13.0</string>
     <key>LSUIElement</key><true/>
+    <key>NSMicrophoneUsageDescription</key><string>MacShot records your voice with screen recordings.</string>
 </dict>
 </plist>
 PLIST
