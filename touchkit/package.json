@@ -1,7 +1,7 @@
 {
   "name": "touchkit",
   "productName": "TouchKit",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "All-in-one helper for everyday computer work: phone remote, on-screen Touch Bar, screenshots, recording and 20+ tools. Windows, macOS and Linux.",
   "main": "src/main.js",
   "author": {
@@ -51,7 +51,8 @@
           "from": "native/mac/input",
           "to": "native/mac/input"
         }
-      ]
+      ],
+      "x64ArchFiles": "Contents/Resources/native/mac/input"
     },
     "win": {
       "target": [
