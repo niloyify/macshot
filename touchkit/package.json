@@ -1,8 +1,8 @@
 {
-  "name": "shotkit",
-  "productName": "ShotKit",
+  "name": "touchkit",
+  "productName": "TouchKit",
   "version": "1.0.0",
-  "description": "Screenshot and screen recording tool for Windows, macOS and Linux",
+  "description": "All-in-one helper for everyday computer work: phone remote, on-screen Touch Bar, screenshots, recording and 20+ tools. Windows, macOS and Linux.",
   "main": "src/main.js",
   "author": {
     "name": "niloyify",
@@ -18,8 +18,8 @@
     "electron-builder": "25.1.8"
   },
   "build": {
-    "appId": "io.github.niloyify.shotkit",
-    "productName": "ShotKit",
+    "appId": "io.github.niloyify.touchkit",
+    "productName": "TouchKit",
     "directories": {
       "output": "dist",
       "buildResources": "build"
@@ -41,9 +41,17 @@
       "identity": null,
       "extendInfo": {
         "LSUIElement": true,
-        "NSMicrophoneUsageDescription": "ShotKit records your voice with screen recordings.",
-        "NSScreenCaptureUsageDescription": "ShotKit takes screenshots and records the screen."
-      }
+        "NSMicrophoneUsageDescription": "TouchKit records your voice with screen recordings.",
+        "NSCameraUsageDescription": "TouchKit takes photos with your camera.",
+        "NSScreenCaptureUsageDescription": "TouchKit takes screenshots and records the screen.",
+        "NSLocalNetworkUsageDescription": "TouchKit lets your phone control this computer over Wi-Fi."
+      },
+      "extraResources": [
+        {
+          "from": "native/mac/input",
+          "to": "native/mac/input"
+        }
+      ]
     },
     "win": {
       "target": [
@@ -59,14 +67,20 @@
             "x64"
           ]
         }
+      ],
+      "extraResources": [
+        {
+          "from": "native/win/input.ps1",
+          "to": "native/win/input.ps1"
+        }
       ]
     },
     "nsis": {
       "oneClick": true,
-      "artifactName": "ShotKit-Setup-${version}.${ext}"
+      "artifactName": "TouchKit-Setup-${version}.${ext}"
     },
     "portable": {
-      "artifactName": "ShotKit-Portable-${version}.${ext}"
+      "artifactName": "TouchKit-Portable-${version}.${ext}"
     },
     "linux": {
       "target": [
@@ -77,5 +91,9 @@
       "maintainer": "niloyify <niloyify@users.noreply.github.com>"
     }
   },
-  "homepage": "https://github.com/niloyify/macshot/tree/main/shotkit"
+  "homepage": "https://github.com/niloyify/macshot/tree/main/touchkit",
+  "dependencies": {
+    "qrcode": "^1.5.4",
+    "ws": "^8.18.0"
+  }
 }

@@ -1,6 +1,6 @@
 # MacShot
 
-> Need it on **Windows or Linux** too? See [ShotKit](shotkit/README.md), the cross-platform version in this repo.
+> Want more? [TouchKit](touchkit/README.md) is the all-in-one version for Windows, macOS and Linux: phone remote, on-screen Touch Bar, window snap, screenshots, recording and 20+ everyday tools.
 
 A tiny menu bar screenshot and screen recording tool for macOS.
 

@@ -1,0 +1,38 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'">
+<title>TouchKit Touch Bar</title>
+<link rel="stylesheet" href="touchbar.css">
+</head>
+<body>
+<div class="bar">
+  <div class="grip" title="Drag to move">⋮⋮</div>
+  <button data-key="esc" class="txt">esc</button>
+  <span class="sep"></span>
+  <button data-key="brightdown" title="Brightness down">🔅</button>
+  <button data-key="brightup" title="Brightness up">🔆</button>
+  <span class="sep"></span>
+  <button data-key="voldown" title="Volume down">🔉</button>
+  <button data-key="mute" title="Mute">🔇</button>
+  <button data-key="volup" title="Volume up">🔊</button>
+  <span class="sep"></span>
+  <button data-key="prev" title="Previous">⏮</button>
+  <button data-key="play" title="Play / pause">⏯</button>
+  <button data-key="next" title="Next">⏭</button>
+  <span class="sep"></span>
+  <button data-snap="left" title="Window: left half">◧</button>
+  <button data-snap="max" title="Window: full screen">⬜</button>
+  <button data-snap="right" title="Window: right half">◨</button>
+  <button data-key="missioncontrol" title="All windows">🗂</button>
+  <button data-key="desktop" title="Show desktop">🖥</button>
+  <span class="sep"></span>
+  <button data-do="screenshot" title="Screenshot">📸</button>
+  <button data-do="record" title="Record screen" id="rec">⏺</button>
+  <button data-do="open" title="Open TouchKit">👀</button>
+  <button data-do="bar" title="Hide Touch Bar" class="close">✕</button>
+</div>
+<script src="touchbar.js"></script>
+</body>
+</html>

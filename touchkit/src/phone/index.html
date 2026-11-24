@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0b1220">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.json">
+<title>TouchKit Remote</title>
+<link rel="stylesheet" href="phone.css">
+</head>
+<body>
+<header>
+  <div class="brand"><span class="eyes">👀</span> TouchKit</div>
+  <div id="status" class="status">Connecting…</div>
+</header>
+
+<section id="pair" class="pair hidden">
+  <p>Enter the 6-digit code shown on your computer.</p>
+  <input id="pin" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="000000">
+  <button id="pairBtn" class="primary">Connect</button>
+</section>
+
+<main id="app" class="hidden">
+  <section id="tab-pad" class="tab active">
+    <div id="pad" class="pad"><span>Move with one finger · tap to click<br>Two fingers: scroll · two-finger tap: right click</span></div>
+    <div class="row mouse">
+      <button data-click="left">Left</button>
+      <button id="drag">Hold</button>
+      <button data-click="right">Right</button>
+    </div>
+  </section>
+
+  <section id="tab-bar" class="tab">
+    <h3>Sound &amp; screen</h3>
+    <div class="grid">
+      <button data-key="voldown">🔉<small>Vol −</small></button>
+      <button data-key="mute">🔇<small>Mute</small></button>
+      <button data-key="volup">🔊<small>Vol +</small></button>
+      <button data-key="brightdown">🔅<small>Bright −</small></button>
+      <button data-key="brightup">🔆<small>Bright +</small></button>
+      <button data-key="lock">🔒<small>Lock</small></button>
+    </div>
+    <h3>Media</h3>
+    <div class="grid">
+      <button data-key="prev">⏮<small>Prev</small></button>
+      <button data-key="play">⏯<small>Play</small></button>
+      <button data-key="next">⏭<small>Next</small></button>
+    </div>
+    <h3>Windows &amp; apps</h3>
+    <div class="grid">
+      <button data-snap="left">◧<small>Left half</small></button>
+      <button data-snap="max">⬜<small>Full</small></button>
+      <button data-snap="right">◨<small>Right half</small></button>
+      <button data-key="missioncontrol">🗂<small>All windows</small></button>
+      <button data-key="switchapp">⇥<small>Switch app</small></button>
+      <button data-key="desktop">🖥<small>Desktop</small></button>
+      <button data-key="search">🔍<small>Search</small></button>
+      <button data-key="launchpad">🚀<small>Apps</small></button>
+      <button data-key="closewin">✕<small>Close tab</small></button>
+    </div>
+    <h3>Quick</h3>
+    <div class="grid">
+      <button data-tool="screenshot">📸<small>Screenshot</small></button>
+      <button data-tool="record">⏺<small>Record</small></button>
+      <button data-key="copy">📋<small>Copy</small></button>
+      <button data-key="paste">📥<small>Paste</small></button>
+      <button data-key="undo">↶<small>Undo</small></button>
+      <button data-tool="awake">☕<small>Keep awake</small></button>
+    </div>
+  </section>
+
+  <section id="tab-keys" class="tab">
+    <textarea id="text" placeholder="Type here, then Send. Your phone's keyboard (and voice typing) works."></textarea>
+    <div class="row">
+      <button id="sendText" class="primary">Send text</button>
+      <button id="clearText">Clear</button>
+    </div>
+    <div class="grid keys">
+      <button data-key="esc">Esc</button>
+      <button data-key="up">↑</button>
+      <button data-key="backspace">⌫</button>
+      <button data-key="left">←</button>
+      <button data-key="down">↓</button>
+      <button data-key="right">→</button>
+      <button data-key="tab">Tab</button>
+      <button data-key="space">Space</button>
+      <button data-key="enter">Enter ⏎</button>
+    </div>
+  </section>
+</main>
+
+<nav id="tabs" class="hidden">
+  <button data-tab="pad" class="active">🖱<span>Touchpad</span></button>
+  <button data-tab="bar">🎛<span>Touch Bar</span></button>
+  <button data-tab="keys">⌨️<span>Keyboard</span></button>
+</nav>
+<script src="phone.js"></script>
+</body>
+</html>
