@@ -26,7 +26,7 @@
     const hello = user ? `Hi ${esc((user.name || user.email).split(' ')[0])} 👋` : 'Welcome 👋';
     el.innerHTML = `<div class="hero"><h1>${hello}</h1><p class="sub">All your everyday tools in one place — on your phone, laptop and the web.</p>
       <input id="hs" class="hero-search" type="search" placeholder="What do you want to do? e.g. invoice, QR, convert…" autocomplete="off"></div>
-      ${user || (window.TK_CONFIG || {}).accounts === false ? '' : `<div class="banner info"><div class="grow"><b>Use TouchKit on all your devices</b><br><span class="muted">Create a free account to sync notes, to-dos, time tracking and invoices between your phone and computer.</span></div><button class="primary" id="join">Log in / Sign up</button></div>`}
+      ${user || ((window.TK_CONFIG || {}).accounts === false && !window.TK_FIREBASE) ? '' : `<div class="banner info"><div class="grow"><b>Use TouchKit on all your devices</b><br><span class="muted">Create a free account to sync notes, to-dos, time tracking and invoices between your phone and computer.</span></div><button class="primary" id="join">Log in / Sign up</button></div>`}
       <div id="results"></div><div id="blocks"></div>`;
     const blocks = $(el, '#blocks');
     const f = favs().map((id) => TK.tools.find((t) => t.id === id)).filter(Boolean);
