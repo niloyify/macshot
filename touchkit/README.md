@@ -1,27 +1,38 @@
 # 👀 TouchKit
 
-**Everything you need to use your computer easily, in one app.** Windows, macOS and Linux, with a phone remote that works in any phone browser.
+**All your everyday tools in one simple app, on every device:** Windows, Mac, Linux, iPhone, Android and the web. **One account** keeps your notes, to-dos, time tracking and invoices in sync everywhere.
 
-Made for people whose laptop has no touch screen, or whose Touch Bar broke, and for freelancers who juggle ten small tools a day.
+- **Website / phones**: open TouchKit in any browser. On iPhone or Android, tap *Share → Add to Home Screen* and it works like an app, even offline.
+- **Desktop app** (Windows, Mac, Linux): everything above, plus tools that control the computer, like the phone remote, the on-screen Touch Bar, window snap and clipboard history.
 
-## Highlights
-
-- **📱 Phone Remote**: scan a QR code and your phone becomes a **touchpad, Touch Bar and keyboard** (voice typing works too). No app to install. A 6-digit code protects it, and it only works on your own Wi‑Fi.
-- **🎛 On-screen Touch Bar**: volume, brightness, music, window layouts and screenshots in a bar that floats at the bottom of the screen and never steals focus.
-- **🪟 Window Snap**: put a window on the left or right half, or full screen, with one shortcut.
-
-## All tools
+## Tools (30+)
 
 | Group | Tools |
 |---|---|
-| Control | Phone Remote · Touch Bar · Window Snap · Keep Awake |
-| Capture | Screenshot & Screen Recording (with mic) · Camera photo · Color Picker |
-| Work | Clipboard History · Quick Notes · To-do · Focus Timer (Pomodoro) · World Clock |
-| Freelance | Time Tracker (CSV export) · Invoice Maker (PDF) · Rate Calculator |
-| Text & Data | Text Tools (word count, case, clean-up) · Password Generator · QR Code Maker (links, Wi‑Fi) · JSON formatter · Base64 / URL encode · Unit Converter (incl. bigha, katha, decimal, maund) |
-| Images | Image Resizer / Compressor / Converter (JPG, PNG, WebP) |
+| Account | Log in / sign up · sync on all devices · log out (one device or all) · delete account |
+| Work | Quick Notes · To-do · Focus Timer · World Clock · Clipboard History* |
+| Freelance | Time Tracker (CSV) · Invoice Maker (PDF) · Rate Calculator |
+| Calculate | Calculator · Currency Converter (live rates) · Percentage · Date & Age · Loan & EMI |
+| Text & Data | Text Tools · Password Generator · QR Code Maker · JSON · Encode / Decode · Unit Converter (incl. bigha, katha, decimal, maund) |
+| Media | Image Resizer · Images to PDF · Voice Recorder · Read Aloud (Bangla too) · Voice Typing (বাংলা, English…) |
+| Capture | Screenshot & Screen Recording · Camera · Color Picker |
+| Control | Phone Remote* · On-screen Touch Bar* · Window Snap* · Keep Awake |
 
-Everything runs on your computer. Nothing is uploaded.
+\* Desktop app only, because a website is not allowed to control the computer.
+
+Everything runs on your device. With an account, your tool data is also stored on the TouchKit server so it can sync.
+
+## Run the website and account server
+
+```bash
+docker compose -f server/docker-compose.yml up -d --build
+```
+
+This opens TouchKit at http://localhost:8080, with accounts and sync. Data lives in the `touchkit-data` volume. Put it behind HTTPS (Caddy, nginx or a host such as Render or Fly.io) to use it from phones. The server has no dependencies: Node 22 with the built-in `node:sqlite`.
+
+API: `POST /api/register`, `POST /api/login`, `POST /api/logout`, `POST /api/logout-all`, `GET /api/me`, `GET /api/data?since=`, `PUT /api/data`, `POST /api/delete-account`. Passwords are hashed with scrypt, sessions are random tokens (only their hash is stored), and login attempts are rate limited.
+
+The desktop app talks to the server set in `web/config.js` (`server`), or the one entered under *Account → Server*.
 
 ## Shortcuts
 
@@ -59,7 +70,11 @@ swiftc -O native/mac/input.swift -o native/mac/input
 
 `npm start -- --test` takes a screenshot and a 4-second recording, then quits. `--bar` opens the Touch Bar at start and `--hidden` starts in the tray only.
 
-How it fits together: `src/main.js` holds the tray, shortcuts and windows. `src/input.js` controls the mouse, keys and windows through `native/mac/input.swift` (macOS), `native/win/input.ps1` (Windows) or xdotool (Linux). `src/remote.js` is the phone server, and `src/phone/` is the phone web app. The tools live in `src/hub/tools.js`.
+How it fits together:
+
+- `web/` is the app itself. The website, the phones and the desktop app all use it. The tools are in `web/tools.js`, accounts and sync in `web/account.js`, and `web/platform.js` swaps native features for browser ones on the web.
+- `server/` is the account and sync server, which also serves `web/`.
+- `src/` is the desktop app (Electron): tray, shortcuts, screenshots, recording, the phone remote (`remote.js`, `phone/`) and the Touch Bar. Mouse, keys and windows are controlled through `native/mac/input.swift` (macOS), `native/win/input.ps1` (Windows) or xdotool (Linux).
 
 ## License
 

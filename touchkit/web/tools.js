@@ -1,14 +1,23 @@
 // All TouchKit tools. Each tool: { id, name, icon, group, desc, render(el) → optional cleanup }.
 /* global tk */
-const TK = { groups: ['Control', 'Capture', 'Work', 'Freelance', 'Text & Data', 'Images'], tools: [] };
+const TK = { groups: ['Control', 'Capture', 'Work', 'Freelance', 'Calculate', 'Text & Data', 'Media'], tools: [] };
 
 // MARK: helpers
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const $ = (root, sel) => root.querySelector(sel);
 const $$ = (root, sel) => [...root.querySelectorAll(sel)];
+// Saved tool data. Every change is stamped with the time, so it can sync to the
+// user's account (see account.js) and the newest copy wins on every device.
 const store = {
   get(k, d) { try { const v = localStorage.getItem('tk.' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
-  set(k, v) { try { localStorage.setItem('tk.' + k, JSON.stringify(v)); } catch {} },
+  set(k, v, fromSync) {
+    try {
+      localStorage.setItem('tk.' + k, JSON.stringify(v));
+      if (!fromSync) { localStorage.setItem('tkm.' + k, String(Date.now())); window.dispatchEvent(new CustomEvent('tk-store', { detail: k })); }
+    } catch {}
+  },
+  updated(k) { return +(localStorage.getItem('tkm.' + k) || 0); },
+  keys() { return Object.keys(localStorage).filter((k) => k.startsWith('tk.')).map((k) => k.slice(3)); },
 };
 function toast(text) {
   const t = document.getElementById('toast');
@@ -37,25 +46,9 @@ async function accessBanner(el) {
   $(b, 'button').onclick = () => tk.call('askAccess');
 }
 
-// MARK: Home
-TK.home = {
-  render(el) {
-    el.innerHTML = `<h1>👋 Welcome to TouchKit</h1><p class="sub">Everything you need to use your computer easily — in one place. Press <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>Space</kbd> any time to open it.</p>`;
-    accessBanner(el);
-    for (const g of TK.groups) {
-      add(el, `<h2>${esc(g)}</h2>`);
-      const cards = add(el, '<div class="cards"></div>');
-      for (const t of TK.tools.filter((x) => x.group === g)) {
-        const c = add(cards, `<div class="card"><div class="ic">${t.icon}</div><b>${esc(t.name)}</b><span>${esc(t.desc)}</span></div>`);
-        c.onclick = () => TK.open(t.id);
-      }
-    }
-  },
-};
-
 // MARK: Control
 
-tool({ id: 'remote', name: 'Phone Remote', icon: '📱', group: 'Control', desc: 'Use your phone as a touchpad, Touch Bar and keyboard',
+tool({ id: 'remote', only: 'desktop', name: 'Phone Remote', icon: '📱', group: 'Control', desc: 'Use your phone as a touchpad, Touch Bar and keyboard',
   render(el) {
     head(el, this, 'Scan the code with your phone camera. Your phone becomes a touchpad, Touch Bar and keyboard — no app to install. Phone and computer must be on the same Wi‑Fi.');
     accessBanner(el);
@@ -82,7 +75,7 @@ tool({ id: 'remote', name: 'Phone Remote', icon: '📱', group: 'Control', desc:
     return () => clearInterval(t);
   } });
 
-tool({ id: 'touchbar', name: 'Touch Bar', icon: '🎛', group: 'Control', desc: 'A Touch Bar on your screen: volume, brightness, music, windows',
+tool({ id: 'touchbar', only: 'desktop', name: 'Touch Bar', icon: '🎛', group: 'Control', desc: 'A Touch Bar on your screen: volume, brightness, music, windows',
   render(el) {
     head(el, this, 'For computers without a Touch Bar (or with a broken one). It floats at the bottom of the screen and never steals focus.');
     accessBanner(el);
@@ -95,7 +88,7 @@ tool({ id: 'touchbar', name: 'Touch Bar', icon: '🎛', group: 'Control', desc: 
     }
   } });
 
-tool({ id: 'windows', name: 'Window Snap', icon: '🪟', group: 'Control', desc: 'Put any window on the left, right or full screen in one click',
+tool({ id: 'windows', only: 'desktop', name: 'Window Snap', icon: '🪟', group: 'Control', desc: 'Put any window on the left, right or full screen in one click',
   render(el) {
     head(el, this, 'Click a layout, then click the window you want — or use the keyboard shortcuts from any app.');
     accessBanner(el);
@@ -195,7 +188,7 @@ tool({ id: 'color', name: 'Color Picker', icon: '🎨', group: 'Capture', desc: 
 
 // MARK: Work
 
-tool({ id: 'clipboard', name: 'Clipboard History', icon: '📋', group: 'Work', desc: 'Everything you copied — search, pin and copy again',
+tool({ id: 'clipboard', only: 'desktop', name: 'Clipboard History', icon: '📋', group: 'Work', desc: 'Everything you copied — search, pin and copy again',
   render(el) {
     head(el, this, 'Shortcut: Alt+Shift+V. Click an item to copy it again. Pinned items are kept forever.');
     const p = add(el, `<div><div class="row" style="margin-bottom:10px"><input class="grow" id="q" placeholder="Search…"><button class="danger" id="clear">Clear (keep pinned)</button></div><div class="list" id="l"></div></div>`);
@@ -544,7 +537,7 @@ tool({ id: 'units', name: 'Unit Converter', icon: '📏', group: 'Text & Data', 
 
 // MARK: Images
 
-tool({ id: 'image', name: 'Image Resizer', icon: '🖼', group: 'Images', desc: 'Resize, compress and convert images (JPG, PNG, WebP)',
+tool({ id: 'image', name: 'Image Resizer', icon: '🖼', group: 'Media', desc: 'Resize, compress and convert images (JPG, PNG, WebP)',
   render(el) {
     head(el, this, 'Drop an image here. Everything happens on your computer.');
     const p = add(el, `<div class="panel" id="drop" style="text-align:center;padding:40px;border-style:dashed"><p>Drop an image here or</p><input type="file" id="file" accept="image/*"></div>
@@ -580,4 +573,258 @@ tool({ id: 'image', name: 'Image Resizer', icon: '🖼', group: 'Images', desc: 
     $$(p, '#fmt, #q').forEach((i) => i.oninput = () => { $(p, '#qv').textContent = $(p, '#q').value; render(); });
     $(p, '#sv').onclick = () => tk.call('saveAs', { name: `${name}-${$(p, '#w').value}.${{ 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }[$(p, '#fmt').value]}`, dataUrl: out });
     $(p, '#cp').onclick = () => $(p, '#c').toBlob((b) => navigator.clipboard.write([new ClipboardItem({ 'image/png': b })]).then(() => toast('Copied'), () => toast('Could not copy')), 'image/png');
+  } });
+
+// MARK: Calculate
+
+tool({ id: 'calc', name: 'Calculator', icon: '🧮', group: 'Calculate', desc: 'A big, simple calculator with history',
+  render(el) {
+    head(el, this);
+    const p = add(el, `<div class="panel calc"><input id="d" class="mono" inputmode="decimal" style="width:100%;font-size:34px;text-align:right" placeholder="0"><div class="muted mono" id="res" style="text-align:right;min-height:22px"></div>
+      <div class="calc-keys">${['C', '(', ')', '÷', '7', '8', '9', '×', '4', '5', '6', '−', '1', '2', '3', '+', '%', '0', '.', '='].map((k) => `<button class="big" data-k="${k}">${k}</button>`).join('')}</div></div><h2>History</h2><div class="list" id="h"></div>`);
+    let hist = store.get('calcHist', []);
+    const d = $(p, '#d');
+    const evaluate = (expr) => {
+      const e = expr.replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-').replace(/(\d+(?:\.\d+)?)%/g, '($1/100)');
+      if (!/^[\d+\-*/().\s]*$/.test(e) || !e.trim()) return null;
+      // Small safe parser (no eval): + - * / and brackets.
+      const tok = e.match(/\d+(?:\.\d+)?|\.\d+|[+\-*/()]/g) || []; let i = 0;
+      const num = () => { const t = tok[i++]; if (t === '(') { const v = sum(); if (tok[i++] !== ')') throw 0; return v; } if (t === '-') return -num(); if (t === '+') return num(); if (t == null || isNaN(+t)) throw 0; return +t; };
+      const prod = () => { let v = num(); while (tok[i] === '*' || tok[i] === '/') v = tok[i++] === '*' ? v * num() : v / num(); return v; };
+      const sum = () => { let v = prod(); while (tok[i] === '+' || tok[i] === '-') v = tok[i++] === '+' ? v + prod() : v - prod(); return v; };
+      try { const v = sum(); if (i !== tok.length) return null; return Number.isFinite(v) ? +v.toPrecision(12) : null; } catch { return null; }
+    };
+    const preview = () => { const v = evaluate(d.value); $(p, '#res').textContent = v == null ? '' : '= ' + v.toLocaleString(); };
+    const drawH = () => { $(el, '#h').innerHTML = hist.map((h) => `<div class="item" style="cursor:pointer" data-v="${esc(h.r)}"><span class="t mono">${esc(h.e)}</span><b class="mono">${esc(h.r)}</b></div>`).join('') || '<span class="muted">—</span>'; el.querySelectorAll('#h .item').forEach((i) => i.onclick = () => { d.value += i.dataset.v; preview(); }); };
+    const equals = () => { const v = evaluate(d.value); if (v == null) return; hist.unshift({ e: d.value, r: String(v) }); hist = hist.slice(0, 30); store.set('calcHist', hist); d.value = String(v); preview(); drawH(); };
+    p.querySelectorAll('[data-k]').forEach((b) => b.onclick = () => { const k = b.dataset.k; if (k === 'C') d.value = ''; else if (k === '=') return equals(); else d.value += k; preview(); });
+    d.oninput = preview; d.onkeydown = (e) => { if (e.key === 'Enter') equals(); };
+    drawH(); d.focus();
+  } });
+
+tool({ id: 'currency', name: 'Currency Converter', icon: '💱', group: 'Calculate', desc: 'Live exchange rates — BDT, USD, EUR, INR and 150 more',
+  render(el) {
+    head(el, this, 'Rates update once a day. Works offline with the last rates.');
+    const s = store.get('currency', { amount: 100, from: 'USD', to: 'BDT' });
+    const p = add(el, `<div class="panel"><div class="row"><input id="a" type="number" value="${s.amount}" style="font-size:22px;width:160px"><select id="f"></select><button id="sw">⇄</button><select id="t"></select></div><div class="big-num" id="o" style="font-size:40px;margin-top:14px"></div><p class="muted" id="m"></p></div><h2>Popular</h2><div class="cards" id="pop"></div>`);
+    let rates = store.get('rates', null);
+    const draw = () => {
+      if (!rates) return;
+      s.amount = +$(p, '#a').value || 0; s.from = $(p, '#f').value; s.to = $(p, '#t').value; store.set('currency', s);
+      const conv = (amt, f, t) => amt / rates.rates[f] * rates.rates[t];
+      $(p, '#o').textContent = `${conv(s.amount, s.from, s.to).toLocaleString(undefined, { maximumFractionDigits: 2 })} ${s.to}`;
+      $(p, '#m').textContent = `1 ${s.from} = ${conv(1, s.from, s.to).toFixed(4)} ${s.to} · rates from ${new Date(rates.time).toLocaleDateString()}`;
+      $(el, '#pop').innerHTML = ['USD', 'EUR', 'GBP', 'INR', 'SAR', 'AED', 'MYR', 'CNY'].filter((c) => c !== s.to && rates.rates[c]).map((c) => `<div class="card"><span>1 ${c}</span><b>${conv(1, c, s.to).toFixed(2)} ${s.to}</b></div>`).join('');
+    };
+    const fill = () => {
+      const opts = Object.keys(rates.rates).sort().map((c) => `<option>${c}</option>`).join('');
+      $(p, '#f').innerHTML = $(p, '#t').innerHTML = opts; $(p, '#f').value = s.from; $(p, '#t').value = s.to; draw();
+    };
+    p.querySelectorAll('input, select').forEach((i) => i.oninput = draw);
+    $(p, '#sw').onclick = () => { const f = $(p, '#f').value; $(p, '#f').value = $(p, '#t').value; $(p, '#t').value = f; draw(); };
+    if (rates) fill();
+    if (!rates || Date.now() - rates.time > 12 * 3600e3) {
+      fetch('https://open.er-api.com/v6/latest/USD').then((r) => r.json()).then((j) => {
+        if (j.result !== 'success') throw new Error();
+        rates = { rates: j.rates, time: Date.now() }; store.set('rates', rates); fill();
+      }).catch(() => { if (!rates) $(p, '#m').textContent = 'Could not load rates. Check your internet.'; });
+    }
+  } });
+
+tool({ id: 'percent', name: 'Percentage', icon: '％', group: 'Calculate', desc: 'Discounts, tips, VAT and % change made easy',
+  render(el) {
+    head(el, this);
+    const rows = [
+      ['What is', '% of', (a, b) => a / 100 * b],
+      ['', 'is what % of', (a, b) => b ? a / b * 100 : 0, '%'],
+      ['% change from', 'to', (a, b) => a ? (b - a) / a * 100 : 0, '%'],
+      ['Price', 'with % discount =', (a, b) => a * (1 - b / 100)],
+      ['Price', 'plus % VAT / tax =', (a, b) => a * (1 + b / 100)],
+    ];
+    const p = add(el, `<div>${rows.map((r, i) => `<div class="panel row" data-i="${i}"><span>${r[0]}</span><input type="number" class="a" style="width:120px"><span>${r[1]}</span><input type="number" class="b" style="width:120px"><span>=</span><b class="mono r" style="font-size:20px"></b></div>`).join('')}</div>`);
+    p.querySelectorAll('[data-i]').forEach((row) => {
+      const r = rows[row.dataset.i];
+      const calc = () => { const a = +row.querySelector('.a').value, b = +row.querySelector('.b').value; row.querySelector('.r').textContent = row.querySelector('.a').value && row.querySelector('.b').value ? (+r[2](a, b).toFixed(2)).toLocaleString() + (r[3] || '') : ''; };
+      row.querySelectorAll('input').forEach((i) => i.oninput = calc);
+    });
+  } });
+
+tool({ id: 'dates', name: 'Date & Age', icon: '📅', group: 'Calculate', desc: 'Age, days between dates, countdowns, add days',
+  render(el) {
+    head(el, this);
+    const today = new Date().toISOString().slice(0, 10);
+    const p = add(el, `<div class="grid2">
+      <div class="panel"><b>Age / time between</b><div class="row" style="margin-top:8px"><input type="date" id="a1"><span>→</span><input type="date" id="a2" value="${today}"></div><div class="big-num" id="ar" style="font-size:26px;margin-top:10px"></div><p class="muted" id="ad"></p></div>
+      <div class="panel"><b>Add or subtract days</b><div class="row" style="margin-top:8px"><input type="date" id="b1" value="${today}"><span>+</span><input type="number" id="b2" value="30" style="width:90px"><span>days</span></div><div class="big-num" id="br" style="font-size:26px;margin-top:10px"></div></div></div>`);
+    const calc = () => {
+      const a = new Date($(p, '#a1').value), b = new Date($(p, '#a2').value);
+      if (!isNaN(a) && !isNaN(b)) {
+        const [s, e] = a <= b ? [a, b] : [b, a];
+        let y = e.getFullYear() - s.getFullYear(), m = e.getMonth() - s.getMonth(), d = e.getDate() - s.getDate();
+        if (d < 0) { m--; d += new Date(e.getFullYear(), e.getMonth(), 0).getDate(); }
+        if (m < 0) { y--; m += 12; }
+        const days = Math.round((e - s) / 864e5);
+        $(p, '#ar').textContent = `${y} years, ${m} months, ${d} days`;
+        $(p, '#ad').textContent = `${days.toLocaleString()} days · ${Math.floor(days / 7).toLocaleString()} weeks · ${(days * 24).toLocaleString()} hours`;
+      } else { $(p, '#ar').textContent = ''; $(p, '#ad').textContent = 'Pick a start date (e.g. your birthday).'; }
+      const c = new Date($(p, '#b1').value);
+      if (!isNaN(c)) { c.setDate(c.getDate() + (+$(p, '#b2').value || 0)); $(p, '#br').textContent = c.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }); }
+    };
+    p.querySelectorAll('input').forEach((i) => i.oninput = calc); calc();
+  } });
+
+tool({ id: 'loan', name: 'Loan & EMI', icon: '🏦', group: 'Calculate', desc: 'Monthly installment, total interest and a payment table',
+  render(el) {
+    head(el, this);
+    const s = store.get('loan', { amount: 500000, rate: 9, years: 5 });
+    const p = add(el, `<div class="panel grid3"><div class="field"><label>Loan amount</label><input type="number" id="a" value="${s.amount}"></div><div class="field"><label>Interest % per year</label><input type="number" id="r" step="0.1" value="${s.rate}"></div><div class="field"><label>Years</label><input type="number" id="y" step="0.5" value="${s.years}"></div></div>
+      <div class="cards"><div class="card"><span>Monthly EMI</span><b class="big-num" style="font-size:28px" id="emi"></b></div><div class="card"><span>Total interest</span><b style="font-size:22px" id="int"></b></div><div class="card"><span>Total to pay</span><b style="font-size:22px" id="tot"></b></div></div>
+      <h2>Year by year</h2><table><thead><tr><th>Year</th><th>Paid</th><th>Interest</th><th>Left to pay</th></tr></thead><tbody id="tb"></tbody></table>`);
+    const calc = () => {
+      s.amount = +$(p, '#a').value || 0; s.rate = +$(p, '#r').value || 0; s.years = +$(p, '#y').value || 0; store.set('loan', s);
+      const n = Math.round(s.years * 12), i = s.rate / 1200;
+      const emi = n ? (i ? s.amount * i * (1 + i) ** n / ((1 + i) ** n - 1) : s.amount / n) : 0;
+      $(p, '#emi').textContent = money(emi); $(p, '#int').textContent = money(emi * n - s.amount); $(p, '#tot').textContent = money(emi * n);
+      let bal = s.amount, rows = '';
+      for (let y = 1; y <= Math.ceil(n / 12) && y <= 40; y++) {
+        let paid = 0, interest = 0;
+        for (let m = 0; m < 12 && (y - 1) * 12 + m < n; m++) { const it = bal * i; interest += it; paid += emi; bal -= emi - it; }
+        rows += `<tr><td>${y}</td><td>${money(paid)}</td><td>${money(interest)}</td><td>${money(Math.max(bal, 0))}</td></tr>`;
+      }
+      $(p, '#tb').innerHTML = rows;
+    };
+    p.querySelectorAll('input').forEach((x) => x.oninput = calc); calc();
+  } });
+
+// MARK: Media
+
+tool({ id: 'voice', name: 'Voice Recorder', icon: '🎙', group: 'Media', desc: 'Record voice notes and save them',
+  render(el) {
+    head(el, this, 'Record a voice note. Press Save to keep it as a file.');
+    const p = add(el, `<div class="panel" style="text-align:center"><div class="big-num" id="t">00:00</div><div class="row" style="justify-content:center;margin-top:12px"><button class="primary big" id="go">🎙 Record</button></div><p class="muted" id="m"></p></div><div class="list" id="l"></div>`);
+    let rec = null, start = 0, tick = 0;
+    const clips = [];
+    const drawList = () => { $(el, '#l').innerHTML = ''; clips.forEach((c, i) => { const it = add($(el, '#l'), `<div class="item"><audio controls src="${c.url}" style="flex:1"></audio><button>💾 Save</button></div>`); it.querySelector('button').onclick = () => tk.call('saveAs', { name: `Voice ${i + 1}.${c.ext}`, dataUrl: c.data }); }); };
+    $(p, '#go').onclick = async () => {
+      if (rec) { rec.stop(); return; }
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const type = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm'].find((t) => MediaRecorder.isTypeSupported(t)) || '';
+        rec = new MediaRecorder(stream, type ? { mimeType: type } : undefined);
+        const chunks = [];
+        rec.ondataavailable = (e) => chunks.push(e.data);
+        rec.onstop = () => {
+          stream.getTracks().forEach((t) => t.stop()); clearInterval(tick);
+          const blob = new Blob(chunks, { type: rec.mimeType });
+          const fr = new FileReader(); fr.onload = () => { clips.unshift({ url: URL.createObjectURL(blob), data: fr.result, ext: rec.mimeType.includes('mp4') ? 'm4a' : 'webm' }); rec = null; $(p, '#go').textContent = '🎙 Record'; drawList(); }; fr.readAsDataURL(blob);
+        };
+        rec.start(); start = Date.now(); $(p, '#go').textContent = '⏹ Stop';
+        tick = setInterval(() => { const s = Math.floor((Date.now() - start) / 1000); $(p, '#t').textContent = `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; }, 250);
+      } catch { $(p, '#m').textContent = 'Microphone not available. Allow microphone access and try again.'; }
+    };
+    return () => { if (rec && rec.state !== 'inactive') rec.stop(); clearInterval(tick); };
+  } });
+
+tool({ id: 'speak', name: 'Read Aloud', icon: '🔊', group: 'Media', desc: 'Your device reads any text out loud — Bangla too',
+  render(el) {
+    head(el, this, 'Paste text and press Play. Pick a voice for your language.');
+    const p = add(el, `<div class="panel"><textarea id="t" style="font-family:inherit;font-size:15px">${esc(store.get('speakText', 'Hello! TouchKit can read text out loud.'))}</textarea>
+      <div class="row" style="margin-top:10px"><select id="v" class="grow"></select><label style="margin:0">Speed</label><input type="range" id="r" min="0.5" max="2" step="0.1" value="1"><button class="primary big" id="go">▶ Play</button><button class="big" id="st">⏹</button></div><p class="muted" id="m"></p></div>`);
+    if (!('speechSynthesis' in window)) { $(p, '#m').textContent = 'This device cannot read text aloud.'; return; }
+    const fill = () => {
+      const vs = speechSynthesis.getVoices();
+      $(p, '#v').innerHTML = vs.map((v, i) => `<option value="${i}">${esc(v.name)} (${esc(v.lang)})</option>`).join('');
+      const bn = vs.findIndex((v) => /^bn/i.test(v.lang)); const saved = store.get('speakVoice', null);
+      const pick = vs.findIndex((v) => v.name === saved);
+      $(p, '#v').value = String(pick >= 0 ? pick : bn >= 0 && /[ঀ-৿]/.test($(p, '#t').value) ? bn : Math.max(0, vs.findIndex((v) => v.default)));
+    };
+    fill(); speechSynthesis.onvoiceschanged = fill;
+    $(p, '#go').onclick = () => {
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance($(p, '#t').value);
+      const v = speechSynthesis.getVoices()[+$(p, '#v').value]; if (v) { u.voice = v; u.lang = v.lang; store.set('speakVoice', v.name); }
+      u.rate = +$(p, '#r').value; store.set('speakText', $(p, '#t').value);
+      speechSynthesis.speak(u);
+    };
+    $(p, '#st').onclick = () => speechSynthesis.cancel();
+    return () => speechSynthesis.cancel();
+  } });
+
+tool({ id: 'dictate', name: 'Voice Typing', icon: '🗣', group: 'Media', desc: 'Speak and it types for you — English, বাংলা and more',
+  render(el) {
+    head(el, this, 'Press Start and talk. Copy the text when you are done.');
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const p = add(el, `<div class="panel"><div class="row"><select id="lang"><option value="bn-BD">বাংলা (Bangladesh)</option><option value="en-US">English (US)</option><option value="en-GB">English (UK)</option><option value="hi-IN">हिन्दी</option><option value="ar-SA">العربية</option><option value="es-ES">Español</option></select><button class="primary big" id="go">🎤 Start</button><button id="cp">Copy</button><button id="cl">Clear</button></div>
+      <textarea id="t" style="font-family:inherit;font-size:16px;margin-top:10px;min-height:240px">${esc(store.get('dictation', ''))}</textarea><p class="muted" id="m"></p></div>`);
+    $(p, '#lang').value = store.get('dictLang', 'bn-BD');
+    $(p, '#cp').onclick = () => copy($(p, '#t').value);
+    $(p, '#cl').onclick = () => { $(p, '#t').value = ''; store.set('dictation', ''); };
+    $(p, '#t').oninput = () => store.set('dictation', $(p, '#t').value);
+    if (!SR) { $(p, '#m').textContent = 'Voice typing needs Chrome, Edge or Safari. On phones you can also use the microphone key on your keyboard.'; $(p, '#go').disabled = true; return; }
+    let r = null;
+    $(p, '#go').onclick = () => {
+      if (r) { r.stop(); return; }
+      r = new SR(); r.lang = $(p, '#lang').value; r.continuous = true; r.interimResults = true;
+      store.set('dictLang', r.lang);
+      const base = $(p, '#t').value;
+      let final = '';
+      r.onresult = (e) => {
+        let interim = '';
+        for (let i = e.resultIndex; i < e.results.length; i++) { const x = e.results[i]; if (x.isFinal) final += x[0].transcript + ' '; else interim += x[0].transcript; }
+        $(p, '#t').value = (base ? base + ' ' : '') + final + interim;
+      };
+      r.onend = () => { r = null; $(p, '#go').textContent = '🎤 Start'; store.set('dictation', $(p, '#t').value); };
+      r.onerror = (e) => { $(p, '#m').textContent = 'Stopped: ' + e.error; };
+      r.start(); $(p, '#go').textContent = '⏹ Stop'; $(p, '#m').textContent = 'Listening…';
+    };
+    return () => r && r.stop();
+  } });
+
+tool({ id: 'pdf', name: 'Images to PDF', icon: '📄', group: 'Media', desc: 'Turn photos of documents into one PDF',
+  render(el) {
+    head(el, this, 'Pick photos (in order). Each becomes one A4 page. Nothing is uploaded.');
+    const p = add(el, `<div class="panel"><input type="file" id="f" accept="image/*" multiple><div class="row" id="th" style="margin-top:12px"></div><div class="row" style="margin-top:12px"><button class="primary big" id="go" disabled>Make PDF</button><span class="muted" id="m"></span></div></div>`);
+    let files = [];
+    const loadImg = (file) => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = URL.createObjectURL(file); });
+    $(p, '#f').onchange = (e) => {
+      files = [...e.target.files];
+      $(p, '#th').innerHTML = files.map((f) => `<img src="${URL.createObjectURL(f)}" style="height:90px;border-radius:8px;border:1px solid var(--line)">`).join('');
+      $(p, '#go').disabled = !files.length;
+    };
+    $(p, '#go').onclick = async () => {
+      $(p, '#m').textContent = 'Making PDF…';
+      const enc = new TextEncoder(); const parts = []; const offsets = []; let len = 0;
+      const push = (x) => { const b = typeof x === 'string' ? enc.encode(x) : x; parts.push(b); len += b.length; };
+      const obj = (n, body) => { offsets[n] = len; push(`${n} 0 obj\n`); body(); push('\nendobj\n'); };
+      push('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n');
+      const pageIds = [];
+      let n = 3;
+      const pages = [];
+      for (const f of files) {
+        const img = await loadImg(f);
+        const max = 2000, sc = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+        const c = document.createElement('canvas'); c.width = Math.round(img.naturalWidth * sc); c.height = Math.round(img.naturalHeight * sc);
+        const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height); ctx.drawImage(img, 0, 0, c.width, c.height);
+        const jpg = new Uint8Array(await (await new Promise((r) => c.toBlob(r, 'image/jpeg', 0.85))).arrayBuffer());
+        pages.push({ jpg, w: c.width, h: c.height, page: n, img: n + 1, content: n + 2 }); pageIds.push(n); n += 3;
+      }
+      obj(1, () => push('<< /Type /Catalog /Pages 2 0 R >>'));
+      obj(2, () => push(`<< /Type /Pages /Kids [${pageIds.map((i) => `${i} 0 R`).join(' ')}] /Count ${pageIds.length} >>`));
+      for (const pg of pages) {
+        const W = 595, H = 842, m = 24, s = Math.min((W - 2 * m) / pg.w, (H - 2 * m) / pg.h);
+        const dw = pg.w * s, dh = pg.h * s, x = (W - dw) / 2, y = (H - dh) / 2;
+        const cs = `q ${dw.toFixed(2)} 0 0 ${dh.toFixed(2)} ${x.toFixed(2)} ${y.toFixed(2)} cm /Im0 Do Q`;
+        obj(pg.page, () => push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${W} ${H}] /Resources << /XObject << /Im0 ${pg.img} 0 R >> >> /Contents ${pg.content} 0 R >>`));
+        obj(pg.img, () => { push(`<< /Type /XObject /Subtype /Image /Width ${pg.w} /Height ${pg.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${pg.jpg.length} >>\nstream\n`); push(pg.jpg); push('\nendstream'); });
+        obj(pg.content, () => push(`<< /Length ${cs.length} >>\nstream\n${cs}\nendstream`));
+      }
+      const xref = len;
+      push(`xref\n0 ${n}\n0000000000 65535 f \n`);
+      for (let i = 1; i < n; i++) push(`${String(offsets[i]).padStart(10, '0')} 00000 n \n`);
+      push(`trailer\n<< /Size ${n} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`);
+      const blob = new Blob(parts, { type: 'application/pdf' });
+      const fr = new FileReader();
+      fr.onload = () => { tk.call('saveAs', { name: 'document.pdf', dataUrl: fr.result }); $(p, '#m').textContent = `PDF with ${pages.length} page${pages.length > 1 ? 's' : ''} ready.`; };
+      fr.readAsDataURL(blob);
+    };
   } });

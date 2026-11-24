@@ -1,0 +1,9 @@
+# Run the TouchKit website + account server:  docker compose -f server/docker-compose.yml up -d --build
+services:
+  touchkit:
+    build: { context: .., dockerfile: server/Dockerfile }
+    ports: ["8080:8080"]
+    volumes: ["touchkit-data:/data"]
+    restart: unless-stopped
+volumes:
+  touchkit-data:

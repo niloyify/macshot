@@ -257,9 +257,11 @@ function openHub(tool) {
     title: 'TouchKit', backgroundColor: '#0b1220', show: false,
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     autoHideMenuBar: true,
-    webPreferences: { preload: path.join(__dirname, 'hub', 'preload.js') },
+    webPreferences: { preload: path.join(__dirname, 'hub-preload.js') },
   });
-  hubWin.loadFile(path.join(__dirname, 'hub', 'index.html'), { hash: tool || '' });
+  hubWin.loadFile(path.join(__dirname, '..', 'web', 'index.html'), { hash: tool || '' });
+  hubWin.webContents.setWindowOpenHandler(({ url }) => { if (/^https?:/.test(url)) shell.openExternal(url); return { action: 'deny' }; });
+  hubWin.webContents.on('will-navigate', (e, url) => { if (!url.startsWith('file:')) { e.preventDefault(); if (/^https?:/.test(url)) shell.openExternal(url); } });
   hubWin.once('ready-to-show', () => hubWin.show());
   hubWin.on('closed', () => { hubWin = null; });
   if (process.platform === 'darwin') app.dock.show();
@@ -277,7 +279,7 @@ function toggleBar() {
     frame: false, transparent: true, resizable: false, alwaysOnTop: true, skipTaskbar: true,
     focusable: false, hasShadow: false, fullscreenable: false,
     type: process.platform === 'darwin' ? 'panel' : undefined,
-    webPreferences: { preload: path.join(__dirname, 'hub', 'preload.js') },
+    webPreferences: { preload: path.join(__dirname, 'hub-preload.js') },
   });
   barWin.setAlwaysOnTop(true, 'screen-saver');
   barWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
