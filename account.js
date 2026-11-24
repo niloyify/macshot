@@ -16,7 +16,14 @@
     return `${os} · ${window.TK_PLATFORM === 'desktop' ? 'desktop app' : 'browser'}`;
   };
 
+  // Firebase is used unless the user entered their own TouchKit server.
+  const useFirebase = (base) => !!window.TK_FIREBASE && !(base ?? ((auth && auth.server) || localStorage.getItem('tk-server')));
+
   async function api(method, path, body, base) {
+    if (useFirebase(base)) {
+      try { return await window.TK_FIREBASE(method, path, body, () => auth); }
+      catch (e) { if (e.status === 401 && auth && !path.includes('login')) setAuth(null); throw e; }
+    }
     const res = await fetch((base ?? server()) + path, {
       method,
       headers: { 'Content-Type': 'application/json', ...(auth ? { Authorization: 'Bearer ' + auth.token } : {}) },
@@ -80,7 +87,7 @@
   async function login(kind, email, password, name, base) {
     const r = await api('POST', `/api/${kind}`, { email, password, name, device: deviceName() }, base);
     // A new login uploads everything on this device once, then keeps it in sync.
-    setAuth({ token: r.token, user: r.user, server: base || '', cursor: 0, pushed: 0 });
+    setAuth({ token: r.token, fb: r.fb, user: r.user, server: base || '', cursor: 0, pushed: 0 });
     await sync();
     return r.user;
   }
@@ -136,8 +143,9 @@
           </form>
           <details style="margin-top:12px"><summary class="muted">Server</summary><input id="srv" style="width:100%;margin-top:6px" placeholder="Same as this website"></details></div>
           <p class="muted" style="text-align:center">You can use every tool without an account — logging in only adds sync.</p>
-          ${conf.accounts === false ? '<p class="muted" style="text-align:center">Accounts are not switched on for this website yet. Enter a TouchKit server under “Server”, or use the tools without an account.</p>' : ''}</div>`);
-        $(p, '#srv').value = localStorage.getItem('tk-server') || conf.server || '';
+          ${conf.accounts === false && !window.TK_FIREBASE ? '<p class="muted" style="text-align:center">Accounts are not switched on for this website yet. Enter a TouchKit server under “Server”, or use the tools without an account.</p>' : ''}</div>`);
+        $(p, '#srv').value = localStorage.getItem('tk-server') || (window.TK_FIREBASE ? '' : conf.server || '');
+        if (window.TK_FIREBASE) $(p, '#srv').placeholder = 'TouchKit cloud (default)';
         p.querySelectorAll('[data-m]').forEach((b) => b.onclick = () => {
           mode = b.dataset.m;
           p.querySelectorAll('[data-m]').forEach((x) => x.classList.toggle('primary', x === b));
