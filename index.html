@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; connect-src 'self' http: https: ws: wss:; img-src 'self' data: blob:; media-src 'self' blob: data: mediastream:; style-src 'self' 'unsafe-inline'">
+<meta name="theme-color" content="#3d7bff">
+<meta name="description" content="TouchKit: 30+ everyday tools in one simple app — on your phone, laptop and the web. One account, synced everywhere.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="TouchKit">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>TouchKit — all your everyday tools</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="top">
+  <button id="menu" class="icon-btn" aria-label="Menu">☰</button>
+  <div class="logo" id="logo">👀 TouchKit</div>
+  <button id="me" class="icon-btn" aria-label="Account">👤</button>
+</header>
+<aside id="side">
+  <div class="logo side-logo">👀 TouchKit</div>
+  <input id="search" type="search" placeholder="Search tools…" autocomplete="off">
+  <nav id="nav"></nav>
+  <div class="foot" id="foot"></div>
+</aside>
+<div id="scrim"></div>
+<main id="main"></main>
+<div id="toast"></div>
+<script src="config.js"></script>
+<script src="vendor/qrcode.min.js"></script>
+<script src="platform.js"></script>
+<script src="tools.js"></script>
+<script src="account.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
