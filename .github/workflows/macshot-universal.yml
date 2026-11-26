@@ -1,0 +1,57 @@
+name: MacShot universal release
+
+# Builds MacShot for Windows, macOS and Linux (macshot-universal/ folder) and
+# attaches the files to a GitHub release. Push a tag like macshot-v2.0.0 to run it.
+on:
+  push:
+    tags: ["macshot-v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-15-intel]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: macshot-universal
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --no-audit --no-fund
+      - run: npm run dist
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+      - name: Sign (ad-hoc) and zip the Mac app
+        if: runner.os == 'macOS'
+        run: |
+          APP=$(ls -d dist/mac-universal/MacShot.app)
+          codesign --force --deep --sign - "$APP"
+          codesign --verify --verbose=2 "$APP"
+          ditto -c -k --keepParent "$APP" dist/MacShot-mac-universal.zip
+
+      - name: Attach to the release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          name: MacShot ${{ github.ref_name }} (Windows, macOS, Linux)
+          body: |
+            MacShot for every computer: screenshots, screen recording and sound recording.
+            Alt+Shift+1 area · Alt+Shift+3 full screen · Alt+Shift+5 screen recording · Alt+Shift+6 sound recording
+
+            - Windows: MacShot-Setup-*.exe (installer) or MacShot-Portable-*.exe (no install)
+            - macOS: MacShot-mac-universal.zip (unzip, move MacShot to Applications)
+            - Linux: MacShot-*.AppImage (make it executable and run) or the .deb package
+          files: |
+            macshot-universal/dist/*.exe
+            macshot-universal/dist/*.AppImage
+            macshot-universal/dist/*.deb
+            macshot-universal/dist/MacShot-mac-universal.zip

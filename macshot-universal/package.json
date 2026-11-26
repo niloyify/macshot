@@ -1,0 +1,77 @@
+{
+  "name": "macshot",
+  "productName": "MacShot",
+  "version": "2.0.0",
+  "description": "MacShot: screenshots, screen recording and sound recording for Windows, macOS and Linux",
+  "main": "src/main.js",
+  "author": "niloyify",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --publish never"
+  },
+  "devDependencies": {
+    "electron": "33.2.1",
+    "electron-builder": "25.1.8"
+  },
+  "build": {
+    "appId": "io.github.niloyify.macshot",
+    "productName": "MacShot",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "target": [
+        {
+          "target": "dir",
+          "arch": [
+            "universal"
+          ]
+        }
+      ],
+      "category": "public.app-category.utilities",
+      "identity": null,
+      "extendInfo": {
+        "LSUIElement": true,
+        "NSMicrophoneUsageDescription": "MacShot records your voice and the sound around you.",
+        "NSScreenCaptureUsageDescription": "MacShot takes screenshots and records the screen."
+      }
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": true,
+      "artifactName": "MacShot-Setup-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "MacShot-Portable-${version}.${ext}"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Utility",
+      "maintainer": "niloyify"
+    }
+  }
+}
