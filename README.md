@@ -8,11 +8,14 @@ A tiny menu bar screenshot and screen recording tool for macOS.
 - **Capture Window** — Option+Shift+2
 - **Capture Full Screen** — Option+Shift+3
 - **Start / Stop Recording** — Option+Shift+5 (macOS 15 or later)
+- **Start / Stop Sound Recording** — Option+Shift+6 (sound only, from the microphone)
 - **Open Screenshots Folder** / **Open Recordings Folder**
 
 Each capture is saved as a PNG in `~/ScreenshotTool/Screenshots` and copied to the clipboard.
 
 Screen recordings capture the main screen with the Mac's own sound (music, videos) and your microphone, and are saved as `.mov` files in `~/ScreenshotTool/Recordings`. While recording, the eyes in the menu bar sit on a **red** square; press Option+Shift+5 again (or choose Stop Recording) to save.
+
+Sound recordings capture only the sound around you (a class, a party, a meeting) through the microphone, and are saved as `.m4a` files in the same Recordings folder. The eyes also turn red while sound is recording; press Option+Shift+6 again to save.
 
 ## Download and install
 

@@ -98,3 +98,45 @@ final class ScreenRecorder: NSObject, SCStreamDelegate, SCRecordingOutputDelegat
         finish(error)
     }
 }
+
+// Sound recording for MacShot: records only the microphone (the sound
+// around you, like a class or a party) into an .m4a file. Works on macOS 13+.
+final class SoundRecorder: NSObject, AVAudioRecorderDelegate {
+    private var recorder: AVAudioRecorder?
+    private(set) var file: URL?
+    var onFinish: ((URL?) -> Void)?
+
+    var isRecording: Bool { recorder?.isRecording ?? false }
+
+    func start() throws {
+        try FileManager.default.createDirectory(at: recordingsDir, withIntermediateDirectories: true)
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd 'at' HH.mm.ss"
+        let url = recordingsDir.appendingPathComponent("Sound \(formatter.string(from: Date())).m4a")
+        let settings: [String: Any] = [
+            AVFormatIDKey: kAudioFormatMPEG4AAC,
+            AVSampleRateKey: 44100,
+            AVNumberOfChannelsKey: 1,
+            AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue,
+        ]
+        let recorder = try AVAudioRecorder(url: url, settings: settings)
+        recorder.delegate = self
+        guard recorder.record() else {
+            throw NSError(domain: "MacShot", code: 1,
+                          userInfo: [NSLocalizedDescriptionKey: "The microphone could not start."])
+        }
+        self.recorder = recorder
+        self.file = url
+    }
+
+    func stop() { recorder?.stop() }
+
+    func audioRecorderDidFinishRecording(_ recorder: AVAudioRecorder, successfully flag: Bool) {
+        DispatchQueue.main.async {
+            let file = self.file
+            self.recorder = nil
+            let saved = file.map { FileManager.default.fileExists(atPath: $0.path) } ?? false
+            self.onFinish?(saved ? file : nil)
+        }
+    }
+}

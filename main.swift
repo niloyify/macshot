@@ -46,6 +46,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             recordItem.action = nil
         }
         menu.addItem(recordItem)
+        soundItem = item("Start Sound Recording", #selector(toggleSound), "6")
+        menu.addItem(soundItem)
         menu.addItem(.separator())
         menu.addItem(item("Open Screenshots Folder", #selector(openFolder), "o"))
         menu.addItem(item("Open Recordings Folder", #selector(openRecordings), "r"))
@@ -62,6 +64,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // `--test-record N` records N seconds (default 5), prints the file and quits.
             let seconds = CommandLine.arguments.dropFirst(i + 1).first.flatMap(Double.init) ?? 5
             testRecording(seconds: seconds)
+        } else if let i = CommandLine.arguments.firstIndex(of: "--test-sound") {
+            // `--test-sound N` records N seconds of microphone sound, prints the file and quits.
+            let seconds = CommandLine.arguments.dropFirst(i + 1).first.flatMap(Double.init) ?? 5
+            testSound(seconds: seconds)
         } else {
             registerHotKeys()
             // Ask macOS for Screen Recording permission up front, so the
@@ -111,10 +117,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Redraw only when something changed, so the app stays idle otherwise.
         if abs(target.x - look.x) < 0.02, abs(target.y - look.y) < 0.02, open == eyeOpen,
-           drawnRecording == isRecording { return }
+           drawnRecording == anyRecording { return }
         look = target
         eyeOpen = open
-        drawnRecording = isRecording
+        drawnRecording = anyRecording
         button.image = eyesImage(look: look, open: open)
     }
 
@@ -123,7 +129,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Two eyes on a blue rounded square, like the app icon.
     /// The square turns red while the screen is being recorded.
     func eyesImage(look: CGPoint, open: CGFloat) -> NSImage {
-        let red = isRecording
+        let red = anyRecording
         let image = NSImage(size: NSSize(width: 28, height: 20), flipped: false) { rect in
             (red ? NSColor(red: 0.90, green: 0.16, blue: 0.16, alpha: 1)
                  : NSColor(red: 0.20, green: 0.47, blue: 0.96, alpha: 1)).setFill()
@@ -161,7 +167,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let menuItem = NSMenuItem(title: title, action: action, keyEquivalent: key)
         menuItem.target = self
         // These items show their global shortcut: Option+Shift+1/2/3/5.
-        if ["1", "2", "3", "5"].contains(key) {
+        if ["1", "2", "3", "5", "6"].contains(key) {
             menuItem.keyEquivalentModifierMask = [.option, .shift]
         }
         return menuItem
@@ -169,7 +175,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Global shortcuts that work from any app: Option+Shift+1 (area),
     /// Option+Shift+2 (window), Option+Shift+3 (full screen),
-    /// Option+Shift+5 (start or stop screen recording).
+    /// Option+Shift+5 (start or stop screen recording),
+    /// Option+Shift+6 (start or stop sound-only recording).
     func registerHotKeys() {
         var spec = EventTypeSpec(eventClass: OSType(kEventClassKeyboard),
                                  eventKind: UInt32(kEventHotKeyPressed))
@@ -186,13 +193,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 case 2: app.capture(.window)
                 case 3: app.capture(.full)
                 case 5: app.toggleRecording()
+                case 6: app.toggleSound()
                 default: break
                 }
             }
             return noErr
         }, 1, &spec, nil, nil)
 
-        let keys: [(UInt32, Int)] = [(1, kVK_ANSI_1), (2, kVK_ANSI_2), (3, kVK_ANSI_3), (5, kVK_ANSI_5)]
+        let keys: [(UInt32, Int)] = [(1, kVK_ANSI_1), (2, kVK_ANSI_2), (3, kVK_ANSI_3), (5, kVK_ANSI_5), (6, kVK_ANSI_6)]
         for (id, keyCode) in keys {
             var ref: EventHotKeyRef?
             RegisterEventHotKey(UInt32(keyCode), UInt32(optionKey | shiftKey),
@@ -210,6 +218,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSWorkspace.shared.open(recordingsDir)
     }
     @objc func quit() {
+        if soundRecorder.isRecording {
+            soundRecorder.onFinish = { _ in NSApp.terminate(nil) }
+            soundRecorder.stop()
+            return
+        }
         // Save a running recording before quitting.
         if isRecording, #available(macOS 15, *), let recorder = recorder as? ScreenRecorder {
             recorder.onFinish = { _, _ in NSApp.terminate(nil) }
@@ -257,6 +270,63 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     self.showRecordingError(error)
                 }
             }
+        }
+    }
+
+    // MARK: Sound recording (microphone only)
+
+    var soundItem: NSMenuItem!
+    let soundRecorder = SoundRecorder()
+    var anyRecording: Bool { isRecording || soundRecorder.isRecording }
+
+    @objc func toggleSound() {
+        if soundRecorder.isRecording {
+            soundRecorder.stop()
+            return
+        }
+        soundRecorder.onFinish = { [weak self] file in
+            self?.soundItem.title = "Start Sound Recording"
+            if let file { NSWorkspace.shared.activateFileViewerSelecting([file]) }
+        }
+        AVCaptureDevice.requestAccess(for: .audio) { allowed in
+            DispatchQueue.main.async {
+                guard allowed else { self.showMicHelp(); return }
+                do {
+                    try self.soundRecorder.start()
+                    self.soundItem.title = "Stop Sound Recording"
+                } catch {
+                    self.showMicHelp()
+                }
+            }
+        }
+    }
+
+    func showMicHelp() {
+        let alert = NSAlert()
+        alert.messageText = "MacShot could not use the microphone"
+        alert.informativeText = "Allow MacShot under System Settings → Privacy & Security → Microphone, then try again."
+        alert.addButton(withTitle: "Open Settings")
+        alert.addButton(withTitle: "Cancel")
+        NSApp.activate(ignoringOtherApps: true)
+        if alert.runModal() == .alertFirstButtonReturn,
+           let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone") {
+            NSWorkspace.shared.open(url)
+        }
+    }
+
+    func testSound(seconds: Double) {
+        func log(_ text: String) { FileHandle.standardError.write((text + "\n").data(using: .utf8)!) }
+        soundRecorder.onFinish = { file in
+            log("finished: \(file?.path ?? "no file")")
+            exit(file == nil ? 1 : 0)
+        }
+        do {
+            try soundRecorder.start()
+            log("recording to \(soundRecorder.file!.path)")
+            DispatchQueue.main.asyncAfter(deadline: .now() + seconds) { self.soundRecorder.stop() }
+        } catch {
+            log("start failed: \(error)")
+            exit(1)
         }
     }
 
