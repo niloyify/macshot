@@ -413,6 +413,8 @@ function showMicHelp(error) {
   if (mac && choice === 0) shell.openExternal('x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone');
 }
 
+let keys = {}; // global shortcuts, filled at start
+
 // MARK: Self-test (`Jhuli --test`): checks the capture features, the OCR and
 // PDF tools inside the app, then quits with 0 when everything worked.
 
@@ -423,6 +425,15 @@ async function selfTest() {
   const size = (f) => (f && fs.existsSync(f) ? fs.statSync(f).size : 0);
   const results = {};
   const note = (k, ok, info) => { results[k] = !!ok; console.log(`${k}:`, ok ? 'ok' : 'FAILED', info ?? ''); };
+
+  const missing = Object.keys(keys).filter((k) => !globalShortcut.isRegistered(k));
+  note('shortcuts', !missing.length, missing.length ? 'taken by another app: ' + missing.join(', ') : `${Object.keys(keys).length} registered`);
+  note('tray', tray && !tray.isDestroyed(), 'menu bar / tray icon');
+  note('start at login', process.platform === 'linux' || typeof startsAtLogin() === 'boolean', startsAtLogin() ? 'on' : 'off');
+  const marker = 'Jhuli clipboard test ' + Date.now();
+  clipboard.writeText(marker); await wait(1500);
+  note('clipboard history', clips.some((c) => c.text === marker), `${clips.length} items`);
+  clips = clips.filter((c) => c.text !== marker); saveClips();
 
   const shot = await takeScreenshot(); note('screenshot', size(shot), shot);
   const area = await cap.captureArea(); note('area', size(area), area);
@@ -476,7 +487,7 @@ app.whenReady().then(async () => {
   updateTray();
   tray.on('click', () => tray.popUpContextMenu());
 
-  const keys = {
+  keys = {
     'Alt+Shift+Space': () => openHub(), 'Alt+Shift+M': () => openHub(),
     'Alt+Shift+1': () => cap.captureArea(), 'Alt+Shift+2': () => cap.captureText(),
     'Alt+Shift+3': () => takeScreenshot(), 'Alt+Shift+4': () => cap.captureAnnotate(),
