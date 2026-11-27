@@ -1,6 +1,6 @@
 # MacShot
 
-> MacShot for **Windows, macOS and Linux**: see [macshot-universal](macshot-universal/README.md) (area and full screenshots, screen recording, sound recording).
+> MacShot for **Windows, macOS and Linux**: MacShot is now part of **[Jhuli](touchkit/README.md)** (TouchKit + MacShot in one app for Windows, macOS, Linux, Android, iPhone and the web).
 >
 > Want more? [TouchKit](touchkit/README.md) is the all-in-one version for Windows, macOS and Linux: phone remote, on-screen Touch Bar, window snap, screenshots, recording and 20+ everyday tools.
 

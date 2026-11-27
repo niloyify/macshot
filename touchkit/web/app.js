@@ -1,4 +1,4 @@
-// TouchKit app shell: home screen, sidebar / phone menu, search, favourites.
+// Jhuli app shell: home screen, sidebar / phone menu, search, favourites.
 /* global TK, tk, store, esc, add, $, toast */
 (() => {
   const nav = document.getElementById('nav');
@@ -20,18 +20,18 @@
   }
   function bindCards(root) { root.querySelectorAll('.card[data-id]').forEach((c) => c.onclick = () => open(c.dataset.id)); }
 
-  // On iPhone / iPad (Safari) and Android browsers, show how to install TouchKit as an app.
+  // On iPhone / iPad (Safari) and Android browsers, show how to install Jhuli as an app.
   function installHint() {
     if (desktop || window.AndroidTK || !location.protocol.startsWith('http')) return '';
     const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
     if (standalone || store.get('hideInstall', false)) return '';
     const ua = navigator.userAgent;
-    const how = /iPhone|iPad|iPod/.test(ua) ? 'In Safari, tap <b>Share</b> (□↑) → <b>Add to Home Screen</b>. TouchKit then opens like an app and works offline.'
+    const how = /iPhone|iPad|iPod/.test(ua) ? 'In Safari, tap <b>Share</b> (□↑) → <b>Add to Home Screen</b>. Jhuli then opens like an app and works offline.'
       : /Android/.test(ua) ? 'Tap the browser menu (⋮) → <b>Install app</b> or <b>Add to Home screen</b>, or get the Android app (APK) from the downloads page.'
       : '';
     if (!how) return '';
     setTimeout(() => { const b = document.getElementById('hideInstall'); if (b) b.onclick = () => { store.set('hideInstall', true, true); b.closest('.banner').remove(); }; });
-    return `<div class="banner info"><div class="grow"><b>📲 Install TouchKit on this phone</b><br><span class="muted">${how}</span></div><button id="hideInstall">OK</button></div>`;
+    return `<div class="banner info"><div class="grow"><b>📲 Install Jhuli on this phone</b><br><span class="muted">${how}</span></div><button id="hideInstall">OK</button></div>`;
   }
 
   // MARK: home
@@ -40,7 +40,7 @@
     const hello = user ? `Hi ${esc((user.name || user.email).split(' ')[0])} 👋` : 'Welcome 👋';
     el.innerHTML = `<div class="hero"><h1>${hello}</h1><p class="sub">All your everyday tools in one place — on your phone, laptop and the web.</p>
       <input id="hs" class="hero-search" type="search" placeholder="What do you want to do? e.g. invoice, QR, convert…" autocomplete="off"></div>
-      ${user || ((window.TK_CONFIG || {}).accounts === false && !window.TK_FIREBASE) ? '' : `<div class="banner info"><div class="grow"><b>Use TouchKit on all your devices</b><br><span class="muted">Create a free account to sync notes, to-dos, time tracking and invoices between your phone and computer.</span></div><button class="primary" id="join">Log in / Sign up</button></div>`}
+      ${user || ((window.TK_CONFIG || {}).accounts === false && !window.TK_FIREBASE) ? '' : `<div class="banner info"><div class="grow"><b>Use Jhuli on all your devices</b><br><span class="muted">Create a free account to sync notes, to-dos, time tracking and invoices between your phone and computer.</span></div><button class="primary" id="join">Log in / Sign up</button></div>`}
       ${installHint()}<div id="results"></div><div id="blocks"></div>`;
     const blocks = $(el, '#blocks');
     const f = favs().map((id) => TK.tools.find((t) => t.id === id)).filter(Boolean);
@@ -71,8 +71,8 @@
   // MARK: desktop-only tools on the web
   function desktopOnly(el, t) {
     el.innerHTML = `<h1>${t.icon} ${esc(t.name)}</h1><p class="sub">${esc(t.desc)}</p>
-      <div class="panel"><b>This tool needs the TouchKit desktop app</b><p class="muted">It controls your computer (mouse, keys, windows or clipboard), which a website is not allowed to do. Install the free app for Windows, Mac or Linux — your account and data come with you.</p>
-      <button class="primary big" id="dl">⬇ Download TouchKit</button></div>`;
+      <div class="panel"><b>This tool needs the Jhuli desktop app</b><p class="muted">It controls your computer (mouse, keys, windows or clipboard), which a website is not allowed to do. Install the free app for Windows, Mac or Linux — your account and data come with you.</p>
+      <button class="primary big" id="dl">⬇ Download Jhuli</button></div>`;
     $(el, '#dl').onclick = () => tk.call('openUrl', { url: (window.TK_CONFIG || {}).downloads });
   }
 
@@ -109,7 +109,7 @@
       if (t.id !== 'account') store.set('recent', [t.id, ...recent().filter((x) => x !== t.id)].slice(0, 8), true);
       addStar(t);
     }
-    document.title = t ? `${t.name} — TouchKit` : 'TouchKit — all your everyday tools';
+    document.title = t ? `${t.name} — Jhuli` : 'Jhuli — all your everyday tools';
     renderNav();
   }
 
@@ -136,7 +136,7 @@
   tk.onOpenTool((id) => open(id));
   tk.call('state').then((s) => {
     const names = { darwin: 'macOS', win32: 'Windows', linux: 'Linux', mac: 'Mac', windows: 'Windows', ios: 'iPhone', android: 'Android' };
-    document.getElementById('foot').textContent = `TouchKit ${s.version || ''} · ${names[s.platform] || 'Web'}${desktop ? ' app' : ''}`;
+    document.getElementById('foot').textContent = `Jhuli ${s.version || ''} · ${names[s.platform] || 'Web'}${desktop ? ' app' : ''}`;
   });
   document.body.classList.add(desktop ? 'is-desktop' : 'is-web');
   if (desktop && navigator.userAgent.includes('Mac')) document.body.classList.add('is-mac');

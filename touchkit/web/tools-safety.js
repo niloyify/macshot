@@ -54,7 +54,7 @@ const SHORT = ['bit.ly', 'tinyurl.com', 'cutt.ly', 't.co', 'rb.gy', 'is.gd', 'ow
 const BADTLD = ['xyz', 'top', 'click', 'live', 'buzz', 'icu', 'tk', 'ml', 'ga', 'cf', 'gq', 'work', 'rest', 'cam', 'monster', 'sbs', 'cfd', 'quest', 'bond'];
 tool({ id: 'linkcheck', name: 'Scam Link Checker', icon: '🎣', group: 'Safety & Files', desc: 'Is this link real or a phishing trap? Check before you click',
   render(el) {
-    head(el, this, 'Paste a link from SMS, WhatsApp, Messenger or email. TouchKit checks it on your device — it does not open it.');
+    head(el, this, 'Paste a link from SMS, WhatsApp, Messenger or email. Jhuli checks it on your device — it does not open it.');
     const p = add(el, '<div class="panel"><input type="text" id="u" style="width:100%;font-size:16px" placeholder="https://…"></div><div id="r"></div>');
     const run = () => {
       let raw = $(p, '#u').value.trim(); if (!raw) { $(el, '#r').innerHTML = result({ tip: 'Never give your PIN, OTP or password through a link. bKash, Nagad and banks never ask for them.' }); return; }
@@ -158,7 +158,7 @@ tool({ id: 'speed', name: 'Internet Speed Test', icon: '🚀', group: 'Safety & 
 // MARK: Data pack compare
 tool({ id: 'datapack', name: 'Data Pack Compare', icon: '📶', group: 'Safety & Files', desc: 'Which internet pack is the best value for you',
   render(el) {
-    head(el, this, 'Copy packs from the operator app. TouchKit finds the cheapest way to get the data you use in a month.');
+    head(el, this, 'Copy packs from the operator app. Jhuli finds the cheapest way to get the data you use in a month.');
     const s = store.get('datapack', { need: 30 });
     const p = add(el, `<div class="panel"><div class="field"><label>Data you use per month (GB)</label><input type="number" id="n" value="${s.need}" style="width:120px"></div><div id="t" style="margin-top:12px"></div></div>`); const out = add(el, '<div></div>'); let rows = [];
     const calc = () => {

@@ -1,4 +1,4 @@
-// Android app layer. Inside the TouchKit Android app, window.AndroidTK comes
+// Android app layer. Inside the Jhuli Android app, window.AndroidTK comes
 // from the native side. The phone's WebView cannot download files, print,
 // share, show notifications, read aloud or listen by itself, so this file
 // sends those calls to the native app. On the web this file does nothing.
@@ -14,7 +14,7 @@
     else if (!data.startsWith('data:')) data = await toDataUrl(await (await fetch(data)).blob());
     const where = A.saveFile(name || 'file', data);
     if (where === 'asking') return name; // Android is asking for storage access; it saves after.
-    toast(where ? 'Saved to Downloads/TouchKit: ' + name : 'Could not save the file');
+    toast(where ? 'Saved to Downloads/Jhuli: ' + name : 'Could not save the file');
     return name;
   }
 
@@ -34,7 +34,7 @@
       case 'saveAs': return save(arg.name, arg.dataUrl, arg.text);
       case 'savePhoto': return save(`Photo ${Date.now()}.${String(arg.dataUrl).startsWith('data:image/jpeg') ? 'jpg' : 'png'}`, arg.dataUrl);
       case 'saveVideo': return save(arg.name || `Video ${Date.now()}.webm`, arg.dataUrl);
-      case 'notify': A.notify(String(arg.title || 'TouchKit'), String(arg.body || '')); return true;
+      case 'notify': A.notify(String(arg.title || 'Jhuli'), String(arg.body || '')); return true;
       case 'pdf': A.printHtml(String(arg.html || '')); return 'print';
       case 'openUrl': A.openUrl(String(arg.url)); return true;
       case 'copyText': A.copyText(String(arg.text ?? '')); return true;

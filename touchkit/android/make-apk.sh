@@ -18,6 +18,6 @@ $BT/d8 --release --min-api 24 --lib $JAR --output out/dex $(find out/classes -na
 cp out/base.apk out/unsigned.apk && (cd out/dex && zip -q ../unsigned.apk classes.dex)
 $BT/zipalign -p -f 4 out/unsigned.apk out/aligned.apk
 PASS=$(cat /keys/password)
-$BT/apksigner sign --ks /keys/touchkit.jks --ks-pass "pass:$PASS" --key-pass "pass:$PASS" --out "out/TouchKit-$VERSION.apk" out/aligned.apk
-$BT/apksigner verify "out/TouchKit-$VERSION.apk"
-ls -la "out/TouchKit-$VERSION.apk"
+$BT/apksigner sign --ks /keys/touchkit.jks --ks-pass "pass:$PASS" --key-pass "pass:$PASS" --out "out/Jhuli-$VERSION.apk" out/aligned.apk
+$BT/apksigner verify "out/Jhuli-$VERSION.apk"
+ls -la "out/Jhuli-$VERSION.apk"

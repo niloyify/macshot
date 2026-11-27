@@ -1,4 +1,4 @@
-# TouchKit input helper for Windows. Same line commands as the macOS helper:
+# Jhuli input helper for Windows. Same line commands as the macOS helper:
 #   move DX DY | click left|right|double | down | up | scroll DX DY
 #   key NAME | combo ctrl+shift+s | type TEXT | snap left|right|top|bottom|max|center | trusted
 $ErrorActionPreference = 'SilentlyContinue'

@@ -1,6 +1,6 @@
-// TouchKit input helper for macOS.
+// Jhuli input helper for macOS.
 // Reads one command per line on stdin and moves the mouse, presses keys,
-// or arranges windows. Started by TouchKit; needs the Accessibility permission.
+// or arranges windows. Started by Jhuli; needs the Accessibility permission.
 //
 //   move DX DY | click left|right|double | down | up | scroll DX DY
 //   key NAME   | combo cmd+shift+4       | type TEXT

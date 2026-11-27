@@ -1,5 +1,5 @@
 #!/bin/bash
-# Builds the signed TouchKit APK with Docker: android/out/TouchKit-<version>.apk
+# Builds the signed Jhuli APK with Docker: android/out/Jhuli-<version>.apk
 # The signing key lives outside the repo in ~/.touchkit-android (keep a copy safe:
 # without it, phones cannot update the app, only reinstall).
 set -euo pipefail

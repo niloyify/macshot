@@ -1,4 +1,4 @@
-// Bridge between the TouchKit windows and the main process.
+// Bridge between the Jhuli windows and the main process.
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('tk', {

@@ -1,11 +1,11 @@
-# 👀 TouchKit
+# 👀 Jhuli (ঝুলি)
 
-**TouchKit 3.0 is one app with everything from TouchKit and MacShot.** On the computer it lives in the tray / menu bar as a pair of eyes (red while recording) and has all the screen tools of MacShot: area and full-screen screenshots, copy text from the screen, annotate, colour picker, screen recording and sound-only recording.
+**Jhuli** (ঝুলি, “a bag that holds everything”) **is TouchKit and MacShot in one app** (since 3.1; TouchKit 3.0 was the first merged version). On the computer it lives in the tray / menu bar as a pair of eyes (red while recording) and has all the screen tools of MacShot: area and full-screen screenshots, copy text from the screen, annotate, colour picker, screen recording and sound-only recording.
 
 **All your everyday tools in one simple app, on every device:** Windows, Mac, Linux, iPhone, Android and the web. **One account** keeps your notes, to-dos, time tracking and invoices in sync everywhere.
 
 - **Website / iPhone**: open https://niloyify.github.io/macshot/ in any browser. On iPhone or iPad, tap *Share → Add to Home Screen* in Safari and it works like an app, even offline (an App Store app needs an Apple developer account).
-- **Android**: the TouchKit APK (camera photo and video, voice, notifications, files) — or add the website to the home screen.
+- **Android**: the Jhuli APK (camera photo and video, voice, notifications, files) — or add the website to the home screen.
 - **Desktop app** (Windows, Mac, Linux): everything above, plus tools that control the computer, like the phone remote, the on-screen Touch Bar, window snap and clipboard history.
 
 ## Tools (127)
@@ -36,7 +36,7 @@ Big libraries (PDF, OCR) load only when their tool opens. OCR downloads the lang
 
 **Android app:** `android/build.sh` builds a signed APK with Docker (no Android Studio needed). The signing key lives outside the repo in `~/.touchkit-android`; keep a safe copy, every update must be signed with the same key.
 
-Everything runs on your device. With an account, your tool data is also stored on the TouchKit server so it can sync.
+Everything runs on your device. With an account, your tool data is also stored on the Jhuli server so it can sync.
 
 ## Run the website and account server
 
@@ -44,7 +44,7 @@ Everything runs on your device. With an account, your tool data is also stored o
 docker compose -f server/docker-compose.yml up -d --build
 ```
 
-This opens TouchKit at http://localhost:8080, with accounts and sync. Data lives in the `touchkit-data` volume. Put it behind HTTPS (Caddy, nginx or a host such as Render or Fly.io) to use it from phones. The server has no dependencies: Node 22 with the built-in `node:sqlite`.
+This opens Jhuli at http://localhost:8080, with accounts and sync. Data lives in the `touchkit-data` volume. Put it behind HTTPS (Caddy, nginx or a host such as Render or Fly.io) to use it from phones. The server has no dependencies: Node 22 with the built-in `node:sqlite`.
 
 API: `POST /api/register`, `POST /api/login`, `POST /api/logout`, `POST /api/logout-all`, `GET /api/me`, `GET /api/data?since=`, `PUT /api/data`, `POST /api/delete-account`. Passwords are hashed with scrypt, sessions are random tokens (only their hash is stored), and login attempts are rate limited.
 
@@ -54,7 +54,7 @@ The desktop app talks to the server set in `web/config.js` (`server`), or the on
 
 | Keys | Action |
 |---|---|
-| Alt+Shift+Space or M | Open TouchKit (all tools) |
+| Alt+Shift+Space or M | Open Jhuli (all tools) |
 | Alt+Shift+1 | Capture an area (drag a rectangle, Esc cancels) |
 | Alt+Shift+2 | Copy text from the screen (OCR, Bangla + English) |
 | Alt+Shift+3 | Capture the full screen |
@@ -75,8 +75,8 @@ On a Mac, Alt is the Option key.
 
 See [Releases](https://github.com/niloyify/macshot/releases) (tags `touchkit-v*`):
 
-- **Windows**: `TouchKit-Setup-*.exe`, or `TouchKit-Portable-*.exe` (no install needed)
-- **macOS**: `TouchKit-mac.zip`. Unzip it and move TouchKit to Applications. The first time, right-click → Open. Then allow TouchKit under System Settings → Privacy & Security → **Accessibility** (for the phone remote, Touch Bar and window snap) and **Screen Recording** (for screenshots).
+- **Windows**: `Jhuli-Setup-*.exe`, or `Jhuli-Portable-*.exe` (no install needed)
+- **macOS**: `Jhuli-mac.zip`. Unzip it and move Jhuli to Applications. The first time, right-click → Open. Then allow Jhuli under System Settings → Privacy & Security → **Accessibility** (for the phone remote, Touch Bar and window snap) and **Screen Recording** (for screenshots).
 - **Linux**: `.AppImage` or `.deb`. Install `xdotool` for the phone remote and Touch Bar keys.
 
 ## Develop

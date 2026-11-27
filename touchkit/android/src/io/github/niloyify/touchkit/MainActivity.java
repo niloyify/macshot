@@ -52,7 +52,7 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * TouchKit for Android: the same web app as the website, bundled inside the
+ * Jhuli for Android: the same web app as the website, bundled inside the
  * APK so it works offline. Files are served from assets/web at
  * https://appassets.androidplatform.net/ so the page has a normal secure
  * origin (workers, storage and media all work). The AndroidTK bridge gives the
@@ -91,7 +91,7 @@ public class MainActivity extends Activity {
         s.setAllowContentAccess(true);
         s.setGeolocationEnabled(true);
         s.setTextZoom(100);
-        s.setUserAgentString(s.getUserAgentString() + " TouchKitAndroid/" + BuildInfo.VERSION);
+        s.setUserAgentString(s.getUserAgentString() + " JhuliAndroid/" + BuildInfo.VERSION);
 
         web.addJavascriptInterface(new Bridge(), "AndroidTK");
         web.setWebViewClient(new AssetClient());
@@ -103,7 +103,7 @@ public class MainActivity extends Activity {
 
         if (Build.VERSION.SDK_INT >= 26) {
             NotificationChannel ch = new NotificationChannel(CHANNEL, "Reminders", NotificationManager.IMPORTANCE_HIGH);
-            ch.setDescription("Medicine, birthdays, timers and other TouchKit reminders");
+            ch.setDescription("Medicine, birthdays, timers and other Jhuli reminders");
             getSystemService(NotificationManager.class).createNotificationChannel(ch);
         }
     }
@@ -305,20 +305,20 @@ public class MainActivity extends Activity {
         return n.isEmpty() ? "file" : n;
     }
 
-    /** Save into Downloads/TouchKit. Returns where it went, or null. */
+    /** Save into Downloads/Jhuli. Returns where it went, or null. */
     String saveToDownloads(String name, Decoded d) throws IOException {
         name = safeName(name);
         if (Build.VERSION.SDK_INT >= 29) {
             ContentValues v = new ContentValues();
             v.put(MediaStore.MediaColumns.DISPLAY_NAME, name);
             v.put(MediaStore.MediaColumns.MIME_TYPE, d.mime);
-            v.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/TouchKit");
+            v.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/Jhuli");
             Uri uri = getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, v);
             if (uri == null) throw new IOException("no place to save");
             try (OutputStream out = getContentResolver().openOutputStream(uri)) { out.write(d.bytes); }
-            return "Download/TouchKit/" + name;
+            return "Download/Jhuli/" + name;
         }
-        File dir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "TouchKit");
+        File dir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "Jhuli");
         dir.mkdirs();
         File f = new File(dir, name);
         try (OutputStream out = new FileOutputStream(f)) { out.write(d.bytes); }
@@ -410,7 +410,7 @@ public class MainActivity extends Activity {
                     @Override
                     public void onPageFinished(WebView view, String url) {
                         PrintManager pm = (PrintManager) getSystemService(Context.PRINT_SERVICE);
-                        pm.print("TouchKit", view.createPrintDocumentAdapter("TouchKit"),
+                        pm.print("Jhuli", view.createPrintDocumentAdapter("Jhuli"),
                                 new PrintAttributes.Builder().setMediaSize(PrintAttributes.MediaSize.ISO_A4).build());
                     }
                 });
@@ -425,7 +425,7 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public void copyText(String text) {
-            runOnUiThread(() -> ((ClipboardManager) getSystemService(CLIPBOARD_SERVICE)).setPrimaryClip(ClipData.newPlainText("TouchKit", text)));
+            runOnUiThread(() -> ((ClipboardManager) getSystemService(CLIPBOARD_SERVICE)).setPrimaryClip(ClipData.newPlainText("Jhuli", text)));
         }
 
         @JavascriptInterface

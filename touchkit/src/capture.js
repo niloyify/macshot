@@ -1,4 +1,4 @@
-// Screen capture for the TouchKit desktop app (this is what used to be the separate
+// Screen capture for the Jhuli desktop app (this is what used to be the separate
 // MacShot app): full-screen and area screenshots, copy text from the screen (OCR),
 // capture and annotate, colour picker, screen recording and sound-only recording.
 //
@@ -160,7 +160,7 @@ module.exports = function capture({ shotsDir, videosDir, notify, changed, openHu
     const w = Math.min(area.width - 40, Math.max(760, Math.round(width / display.scaleFactor) + 40));
     const h = Math.min(area.height - 40, Math.max(540, Math.round(height / display.scaleFactor) + 120));
     if (annotateWin && !annotateWin.isDestroyed()) annotateWin.destroy();
-    const win = new BrowserWindow({ width: w, height: h, title: 'TouchKit Annotate', show: false, backgroundColor: '#1e1f22', webPreferences: { preload } });
+    const win = new BrowserWindow({ width: w, height: h, title: 'Jhuli Annotate', show: false, backgroundColor: '#1e1f22', webPreferences: { preload } });
     annotateWin = win;
     win.setMenuBarVisibility(false);
     win.loadFile(path.join(__dirname, 'annotate.html'), { query: isTest() ? { test: '1' } : {} });

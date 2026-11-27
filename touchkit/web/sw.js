@@ -1,5 +1,5 @@
-// Keeps TouchKit working offline: app files come from the cache, then update in the background.
-const CACHE = 'touchkit-v6';
+// Keeps Jhuli working offline: app files come from the cache, then update in the background.
+const CACHE = 'jhuli-v7';
 const FILES = ['./', 'index.html', 'app.css', 'config.js', 'platform.js', 'android.js', 'tools.js', 'kit.js', 'tools-money.js', 'tools-health.js', 'tools-study.js', 'tools-faith.js', 'tools-home.js', 'tools-safety.js', 'tools-shop.js', 'firebase.js', 'account.js', 'app.js', 'vendor/qrcode.min.js', 'icon.svg', 'icon-192.png', 'manifest.webmanifest'];
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', (e) => { e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim())); });

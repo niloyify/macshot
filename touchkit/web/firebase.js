@@ -1,5 +1,5 @@
 // Firebase back end for accounts and sync (free, hosted by Google), used when
-// TK_CONFIG.firebase is set. It answers the same calls as the TouchKit server
+// TK_CONFIG.firebase is set. It answers the same calls as the Jhuli server
 // (/api/login, /api/data …), so account.js works the same with either.
 // Uses the plain Firebase REST APIs; no SDK needed.
 (() => {

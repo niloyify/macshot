@@ -1,8 +1,8 @@
-// TouchKit: an all-in-one helper for everyday computer work, for Windows,
+// Jhuli: an all-in-one helper for everyday computer work, for Windows,
 // macOS and Linux, with a phone remote that works on any phone browser.
 // Since 3.0 it also has everything from MacShot (screen capture tools).
 //
-//   Alt+Shift+Space / M  open TouchKit (all tools)
+//   Alt+Shift+Space / M  open Jhuli (all tools)
 //   Alt+Shift+1  capture an area          Alt+Shift+3  capture the full screen
 //   Alt+Shift+2  copy text from screen    Alt+Shift+4  capture and annotate
 //   Alt+Shift+5  screen recording         Alt+Shift+6  sound recording (microphone)
@@ -11,7 +11,7 @@
 //   Alt+Shift+Q  QR code                  Alt+Shift+B  on-screen Touch Bar
 //   Alt+Shift+←/→/↑  window to the left half / right half / full screen
 //
-// Screenshots and photos: Pictures/TouchKit. Recordings: Videos/TouchKit.
+// Screenshots and photos: Pictures/Jhuli. Recordings: Videos/Jhuli.
 
 const {
   app, BrowserWindow, Tray, Menu, globalShortcut, desktopCapturer, screen,
@@ -33,8 +33,8 @@ app.on('web-contents-created', (_e, wc) => {
   wc.on('preload-error', (_ev, p, err) => devLog('[preload-error]', p, err));
 });
 
-const shotsDir = path.join(app.getPath('pictures'), 'TouchKit');
-const videosDir = path.join(app.getPath('videos'), 'TouchKit');
+const shotsDir = path.join(app.getPath('pictures'), 'Jhuli');
+const videosDir = path.join(app.getPath('videos'), 'Jhuli');
 
 let tray = null;
 let hubWin = null;
@@ -43,8 +43,49 @@ let awakeId = null;
 let phones = []; // reply functions of connected phones
 
 // Only one copy at a time; a second launch opens the window of the first.
+// Jhuli used to be called TouchKit: bring its data (tool data, clipboard history) over once.
+(() => {
+  try {
+    const now = app.getPath('userData');
+    const old = path.join(app.getPath('appData'), 'TouchKit');
+    if (!fs.existsSync(now) && fs.existsSync(old)) {
+      fs.cpSync(old, now, { recursive: true, filter: (f) => !/Singleton|\.lock$|dev\.log$/.test(path.basename(f)) });
+    }
+  } catch {}
+})();
+
 if (!app.requestSingleInstanceLock()) app.quit();
-app.on('second-instance', () => openHub());
+// Opening Jhuli again shows its window (unless it was started hidden, e.g. at login).
+app.on('second-instance', (_e, argv) => { if (!argv.includes('--hidden')) openHub(); });
+
+// MARK: Start at login. On macOS a small LaunchAgent opens Jhuli in the menu bar
+// (hidden); on Windows the system login item does the same.
+const loginPlist = path.join(app.getPath('home'), 'Library', 'LaunchAgents', 'io.github.niloyify.jhuli.plist');
+const appBundle = () => path.resolve(app.getPath('exe'), '..', '..', '..');
+function startsAtLogin() {
+  if (process.platform === 'darwin') return fs.existsSync(loginPlist);
+  return app.getLoginItemSettings({ args: ['--hidden'] }).openAtLogin;
+}
+function setStartAtLogin(on) {
+  if (process.platform === 'darwin') {
+    if (!on) { fs.rmSync(loginPlist, { force: true }); return; }
+    const esc = (x) => x.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+    fs.mkdirSync(path.dirname(loginPlist), { recursive: true });
+    fs.writeFileSync(loginPlist, `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>io.github.niloyify.jhuli</string>
+  <key>ProgramArguments</key>
+  <array><string>/usr/bin/open</string><string>-a</string><string>${esc(appBundle())}</string><string>--args</string><string>--hidden</string></array>
+  <key>RunAtLoad</key><true/>
+</dict>
+</plist>
+`);
+  } else {
+    app.setLoginItemSettings({ openAtLogin: on, args: ['--hidden'] });
+  }
+}
 
 function icon(name) {
   return nativeImage.createFromPath(path.join(__dirname, 'icons', name));
@@ -168,7 +209,7 @@ function openHub(tool) {
   }
   hubWin = new BrowserWindow({
     width: 1100, height: 720, minWidth: 760, minHeight: 520,
-    title: 'TouchKit', backgroundColor: '#0b1220', show: false,
+    title: 'Jhuli', backgroundColor: '#0b1220', show: false,
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     autoHideMenuBar: true,
     webPreferences: { preload: path.join(__dirname, 'hub-preload.js') },
@@ -202,7 +243,7 @@ function toggleBar() {
   updateTray();
 }
 
-// MARK: Messages from the TouchKit windows
+// MARK: Messages from the Jhuli windows
 
 ipcMain.handle('tk', async (_e, cmd, arg = {}) => {
   switch (cmd) {
@@ -221,7 +262,7 @@ ipcMain.handle('tk', async (_e, cmd, arg = {}) => {
     case 'pickColor': { hubWin && hubWin.hide(); try { return await cap.pickColor(); } finally { if (hubWin && !hubWin.isDestroyed()) hubWin.show(); } }
     case 'takeOcrImage': return cap.takeOcrImage();
     case 'takePickedColors': return cap.takePickedColors();
-    case 'notify': return notify(String(arg.title || 'TouchKit'), String(arg.body || ''));
+    case 'notify': return notify(String(arg.title || 'Jhuli'), String(arg.body || ''));
     case 'record': return toggleRecording();
     case 'awake': return toggleAwake();
     case 'bar': return toggleBar();
@@ -296,10 +337,10 @@ function updateTray() {
   if (!tray) return;
   const busy = cap.isRecording();
   tray.setImage(icon(busy ? 'tray-red.png' : 'tray.png'));
-  tray.setToolTip(busy ? 'TouchKit — recording' : 'TouchKit');
+  tray.setToolTip(busy ? 'Jhuli — recording' : 'Jhuli');
   const open = (dir) => () => { fs.mkdirSync(dir, { recursive: true }); shell.openPath(dir); };
   tray.setContextMenu(Menu.buildFromTemplate([
-    { label: 'Open TouchKit (all tools)', accelerator: 'Alt+Shift+Space', click: () => openHub() },
+    { label: 'Open Jhuli (all tools)', accelerator: 'Alt+Shift+Space', click: () => openHub() },
     { type: 'separator' },
     { label: 'Capture Area', accelerator: 'Alt+Shift+1', click: () => cap.captureArea() },
     { label: 'Capture Full Screen', accelerator: 'Alt+Shift+3', click: () => takeScreenshot() },
@@ -332,11 +373,11 @@ function updateTray() {
     { label: 'Open Recordings Folder', click: open(videosDir) },
     {
       label: 'Start at Login', type: 'checkbox', visible: process.platform !== 'linux',
-      checked: app.getLoginItemSettings().openAtLogin,
-      click: (item) => app.setLoginItemSettings({ openAtLogin: item.checked, args: ['--hidden'] }),
+      checked: startsAtLogin(),
+      click: (item) => { setStartAtLogin(item.checked); updateTray(); },
     },
     { type: 'separator' },
-    { label: `Quit TouchKit ${app.getVersion()}`, click: quit },
+    { label: `Quit Jhuli ${app.getVersion()}`, click: quit },
   ]));
 }
 
@@ -349,11 +390,11 @@ function quit() {
 function showPermissionHelp(err) {
   const mac = process.platform === 'darwin';
   const detail = (err && err.message ? err.message + '\n\n' : '') + (mac
-    ? 'Allow TouchKit under System Settings → Privacy & Security → Screen & System Audio Recording (and Microphone), then quit and reopen TouchKit.'
+    ? 'Allow Jhuli under System Settings → Privacy & Security → Screen & System Audio Recording (and Microphone), then quit and reopen Jhuli.'
     : 'Check that screen capture is allowed on this computer, then try again.');
   if (isTest()) { console.error('ERROR', detail); return; }
   const choice = dialog.showMessageBoxSync({
-    type: 'warning', message: 'TouchKit could not capture the screen', detail,
+    type: 'warning', message: 'Jhuli could not capture the screen', detail,
     buttons: mac ? ['Open Settings', 'Cancel'] : ['OK'],
   });
   if (mac && choice === 0) shell.openExternal('x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture');
@@ -362,17 +403,17 @@ function showPermissionHelp(err) {
 function showMicHelp(error) {
   const mac = process.platform === 'darwin';
   const detail = (error ? error + '\n\n' : '') + (mac
-    ? 'Allow TouchKit under System Settings → Privacy & Security → Microphone, then try again.'
-    : 'Check that a microphone is connected and allowed for TouchKit, then try again.');
+    ? 'Allow Jhuli under System Settings → Privacy & Security → Microphone, then try again.'
+    : 'Check that a microphone is connected and allowed for Jhuli, then try again.');
   if (isTest()) { console.error('ERROR', detail); return; }
   const choice = dialog.showMessageBoxSync({
-    type: 'warning', message: 'TouchKit could not use the microphone', detail,
+    type: 'warning', message: 'Jhuli could not use the microphone', detail,
     buttons: mac ? ['Open Settings', 'Cancel'] : ['OK'],
   });
   if (mac && choice === 0) shell.openExternal('x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone');
 }
 
-// MARK: Self-test (`TouchKit --test`): checks the capture features, the OCR and
+// MARK: Self-test (`Jhuli --test`): checks the capture features, the OCR and
 // PDF tools inside the app, then quits with 0 when everything worked.
 
 async function selfTest() {
@@ -395,11 +436,11 @@ async function selfTest() {
   await wait(800);
   const js = (code) => hubWin.webContents.executeJavaScript(code);
   const tools = await js('TK.tools.length'); note('tools', tools > 100, `${tools} tools`);
-  const picture = await js(`(() => { const c = document.createElement('canvas'); c.width = 900; c.height = 200; const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, 900, 200); x.fillStyle = '#000'; x.font = '64px Arial'; x.fillText('Hello TouchKit 2026', 30, 120); return c.toDataURL(); })()`);
+  const picture = await js(`(() => { const c = document.createElement('canvas'); c.width = 900; c.height = 200; const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, 900, 200); x.fillStyle = '#000'; x.font = '64px Arial'; x.fillText('Hello Jhuli 2026', 30, 120); return c.toDataURL(); })()`);
   cap.setOcrImage(picture); openHub('ocr'); broadcast('ocr');
   let text = '';
   for (let i = 0; i < 90 && !text; i++) { await wait(1000); text = await js(`(document.querySelector('#out') || {}).value || ''`); }
-  note('ocr', /hello\s+touchkit/i.test(text), JSON.stringify(text));
+  note('ocr', /hello\s+jhuli/i.test(text), JSON.stringify(text));
   const pdf = await js(`(async () => { await loadScript('vendor/pdf-lib.min.js'); const d = await PDFLib.PDFDocument.create(); d.addPage([200, 200]); const bytes = await d.save(); await loadScript('vendor/pdf.min.js'); pdfjsLib.GlobalWorkerOptions.workerSrc = 'vendor/pdf.worker.min.js'; const doc = await pdfjsLib.getDocument({ data: bytes }).promise; return doc.numPages; })()`).catch((e) => String(e));
   note('pdf', pdf === 1, pdf);
   hubWin.destroy();
@@ -424,6 +465,12 @@ app.whenReady().then(async () => {
     ...(process.platform === 'darwin' ? [{ role: 'appMenu' }] : []),
     { role: 'editMenu' }, { role: 'windowMenu' },
   ]));
+
+  // The installed app starts at login unless the user turned that off.
+  const loginFlag = path.join(app.getPath('userData'), 'login-default-set');
+  if (app.isPackaged && process.platform !== 'linux' && !process.argv.includes('--test') && !fs.existsSync(loginFlag)) {
+    try { setStartAtLogin(true); fs.writeFileSync(loginFlag, '1'); } catch {}
+  }
 
   tray = new Tray(icon('tray.png'));
   updateTray();

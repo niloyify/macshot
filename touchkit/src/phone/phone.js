@@ -1,4 +1,4 @@
-// TouchKit phone remote. Turns the phone into a touchpad, Touch Bar and keyboard
+// Jhuli phone remote. Turns the phone into a touchpad, Touch Bar and keyboard
 // for the computer that served this page.
 (() => {
   const $ = (s) => document.querySelector(s);

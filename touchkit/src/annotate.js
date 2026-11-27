@@ -1,5 +1,5 @@
 // Annotate: draw arrows, boxes, pen lines, highlights, text, numbered steps and blur
-// on a screenshot, then save it (Pictures/TouchKit) or copy it.
+// on a screenshot, then save it (Pictures/Jhuli) or copy it.
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 const textInput = document.getElementById('textInput');
@@ -205,7 +205,7 @@ window.macshot.on('annotate-image', (dataURL, scaleFactor) => {
       add({ type: 'box', color: '#FF3B30', w: 6, x1: w * 0.1, y1: h * 0.1, x2: w * 0.6, y2: h * 0.6 });
       add({ type: 'arrow', color: '#0A84FF', w: 6, x1: w * 0.9, y1: h * 0.9, x2: w * 0.5, y2: h * 0.5 });
       add({ type: 'blur', x1: w * 0.6, y1: h * 0.1, x2: w * 0.9, y2: h * 0.4 });
-      add({ type: 'text', x: w * 0.1, y: h * 0.7, text: 'TouchKit test', color: '#FF3B30', size: 28 });
+      add({ type: 'text', x: w * 0.1, y: h * 0.7, text: 'Jhuli test', color: '#FF3B30', size: 28 });
       add({ type: 'step', x: w * 0.8, y: h * 0.8, n: 1, color: '#34C759', size: 20 });
       window.macshot.call('test-done', await save(false));
     }

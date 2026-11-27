@@ -1,5 +1,5 @@
 // Accounts: sign up, log in, log out, and keep tool data in sync on every
-// device (phone, laptop, desktop app, website) through the TouchKit server.
+// device (phone, laptop, desktop app, website) through the Jhuli server.
 /* global TK, store, toast, esc, add, $ */
 (() => {
   const AUTH = 'tk-auth';
@@ -16,7 +16,7 @@
     return `${os} · ${window.TK_PLATFORM === 'desktop' ? 'desktop app' : 'browser'}`;
   };
 
-  // Firebase is used unless the user entered their own TouchKit server.
+  // Firebase is used unless the user entered their own Jhuli server.
   const useFirebase = (base) => !!window.TK_FIREBASE && !(base ?? ((auth && auth.server) || localStorage.getItem('tk-server')));
 
   async function api(method, path, body, base) {
@@ -132,7 +132,7 @@
         }
         let mode = 'login';
         const p = add(el, `<div style="max-width:420px;margin:0 auto">
-          <h1 style="text-align:center">👀 TouchKit</h1><p class="sub" style="text-align:center">One account for your phone, laptop and the web. Your notes, to-dos, time tracking and invoices follow you everywhere.</p>
+          <h1 style="text-align:center">👀 Jhuli</h1><p class="sub" style="text-align:center">One account for your phone, laptop and the web. Your notes, to-dos, time tracking and invoices follow you everywhere.</p>
           <div class="panel"><div class="row tabs"><button class="primary grow" data-m="login">Log in</button><button class="grow" data-m="register">Create account</button></div>
           <form id="f" style="display:flex;flex-direction:column;gap:10px;margin-top:14px">
             <div class="field" id="nameF" style="display:none"><label>Your name</label><input id="name" autocomplete="name"></div>
@@ -143,9 +143,9 @@
           </form>
           <details style="margin-top:12px"><summary class="muted">Server</summary><input id="srv" style="width:100%;margin-top:6px" placeholder="Same as this website"></details></div>
           <p class="muted" style="text-align:center">You can use every tool without an account — logging in only adds sync.</p>
-          ${conf.accounts === false && !window.TK_FIREBASE ? '<p class="muted" style="text-align:center">Accounts are not switched on for this website yet. Enter a TouchKit server under “Server”, or use the tools without an account.</p>' : ''}</div>`);
+          ${conf.accounts === false && !window.TK_FIREBASE ? '<p class="muted" style="text-align:center">Accounts are not switched on for this website yet. Enter a Jhuli server under “Server”, or use the tools without an account.</p>' : ''}</div>`);
         $(p, '#srv').value = localStorage.getItem('tk-server') || (window.TK_FIREBASE ? '' : conf.server || '');
-        if (window.TK_FIREBASE) $(p, '#srv').placeholder = 'TouchKit cloud (default)';
+        if (window.TK_FIREBASE) $(p, '#srv').placeholder = 'Jhuli cloud (default)';
         p.querySelectorAll('[data-m]').forEach((b) => b.onclick = () => {
           mode = b.dataset.m;
           p.querySelectorAll('[data-m]').forEach((x) => x.classList.toggle('primary', x === b));

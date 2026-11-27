@@ -40,4 +40,4 @@ npm run dist       # build installers for this OS into dist/
 
 `MacShot --test` checks every feature (screenshots, clipboard history, colour picker, annotate, QR, text reading, converter, notes, timer, stopwatch, 4 s of screen and 4 s of sound recording), prints the results and quits (used to check a build).
 
-> **MacShot is now part of TouchKit 3.0.** Every MacShot feature (screenshots, area, OCR, annotate, colour picker, screen and sound recording, clipboard history, notes, timer, QR, image converter) is inside the TouchKit app, together with 120+ other tools. Get it from the [releases page](https://github.com/niloyify/macshot/releases?q=touchkit). This folder stays for MacShot 2.1.
+> **MacShot is now part of Jhuli (formerly TouchKit).** Every MacShot feature (screenshots, area, OCR, annotate, colour picker, screen and sound recording, clipboard history, notes, timer, QR, image converter) is inside the Jhuli app, together with 120+ other tools. Get it from the [releases page](https://github.com/niloyify/macshot/releases?q=jhuli). This folder stays for MacShot 2.1.
