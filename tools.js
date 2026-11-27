@@ -251,7 +251,7 @@ tool({ id: 'color', name: 'Color Picker', icon: '🎨', group: 'Capture', desc: 
 tool({ id: 'clipboard', only: 'desktop', name: 'Clipboard History', icon: '📋', group: 'Work', desc: 'Everything you copied — search, pin and copy again',
   render(el) {
     head(el, this, 'Shortcut: Alt+Shift+V. Click an item to copy it again. Pinned items are kept forever.');
-    const p = add(el, `<div><div class="row" style="margin-bottom:10px"><input class="grow" id="q" placeholder="Search…"><button class="danger" id="clear">Clear (keep pinned)</button></div><div class="list" id="l"></div></div>`);
+    const p = add(el, `<div><div class="row" style="margin-bottom:10px"><input class="grow" id="q" placeholder="Search…"><button id="snip">📌 Snippets</button><button class="danger" id="clear">Clear (keep pinned)</button></div><div class="list" id="l"></div></div>`);
     let clips = [];
     const draw = () => {
       const q = $(p, '#q').value.toLowerCase();
@@ -271,6 +271,7 @@ tool({ id: 'clipboard', only: 'desktop', name: 'Clipboard History', icon: '📋'
     const load = async () => { clips = await tk.call('clips'); draw(); };
     $(p, '#q').oninput = draw;
     $(p, '#clear').onclick = async () => { clips = await tk.call('clipClear'); draw(); };
+    $(p, '#snip').onclick = () => TK.open('snippets');
     load(); $(p, '#q').focus();
     const t = setInterval(load, 1500);
     return () => clearInterval(t);
@@ -316,27 +317,6 @@ tool({ id: 'todo', name: 'To-do', icon: '✅', group: 'Work', desc: 'A simple ta
     $(p, '#f').onsubmit = (e) => { e.preventDefault(); const v = $(p, '#t').value.trim(); if (!v) return; todos.unshift({ text: v, done: false }); $(p, '#t').value = ''; save(); draw(); };
     $(el, '#cl').onclick = () => { todos = todos.filter((t) => !t.done); save(); draw(); };
     draw(); $(p, '#t').focus();
-  } });
-
-tool({ id: 'timer', name: 'Focus Timer', icon: '⏱', group: 'Work', desc: 'Pomodoro focus timer and stopwatch',
-  render(el) {
-    head(el, this, 'Work 25 minutes, rest 5. A sound and notification tell you when time is up.');
-    const p = add(el, `<div class="panel" style="text-align:center"><div class="row" style="justify-content:center"><button data-m="25">Focus 25</button><button data-m="50">Focus 50</button><button data-m="5">Break 5</button><button data-m="15">Break 15</button><button data-m="0">Stopwatch</button></div><div class="big-num" id="n" style="font-size:96px;margin:20px 0">25:00</div><div class="row" style="justify-content:center"><button class="primary big" id="go">Start</button><button class="big" id="reset">Reset</button></div><p class="muted" id="done"></p></div>`);
-    let total = 25 * 60e3, left = total, running = false, last = 0, up = false;
-    const draw = () => { const ms = up ? left : Math.max(left, 0); const s = Math.ceil(ms / 1000) - (up ? 0 : 0); const v = up ? Math.floor(ms / 1000) : s; $(p, '#n').textContent = `${String(Math.floor(v / 60)).padStart(2, '0')}:${String(v % 60).padStart(2, '0')}`; $(p, '#go').textContent = running ? 'Pause' : 'Start'; document.title = running ? `${$(p, '#n').textContent} — Jhuli` : 'Jhuli'; };
-    const beep = () => { try { const a = new AudioContext(); [0, .3, .6].forEach((t) => { const o = a.createOscillator(); o.frequency.value = 880; o.connect(a.destination); o.start(a.currentTime + t); o.stop(a.currentTime + t + .15); }); } catch {} };
-    const tick = () => {
-      if (!running) return; const now = Date.now(); const dt = now - last; last = now;
-      left += up ? dt : -dt;
-      if (!up && left <= 0) { running = false; left = 0; beep(); new Notification('Jhuli', { body: 'Time is up!' }); const d = store.get('focusDone', 0) + 1; store.set('focusDone', d); $(p, '#done').textContent = `Sessions finished: ${d}`; }
-      draw();
-    };
-    $$(p, '[data-m]').forEach((b) => b.onclick = () => { up = b.dataset.m === '0'; total = +b.dataset.m * 60e3; left = up ? 0 : total; running = false; draw(); });
-    $(p, '#go').onclick = () => { running = !running; last = Date.now(); draw(); };
-    $(p, '#reset').onclick = () => { running = false; left = up ? 0 : total; draw(); };
-    $(p, '#done').textContent = `Sessions finished: ${store.get('focusDone', 0)}`;
-    const t = setInterval(tick, 250); draw();
-    return () => { clearInterval(t); document.title = 'Jhuli'; };
   } });
 
 tool({ id: 'clock', name: 'World Clock', icon: '🌍', group: 'Work', desc: 'Your clients’ time zones at a glance',
@@ -757,33 +737,6 @@ tool({ id: 'loan', name: 'Loan & EMI', icon: '🏦', group: 'Calculate', desc: '
   } });
 
 // MARK: Media
-
-tool({ id: 'voice', name: 'Voice Recorder', icon: '🎙', group: 'Media', desc: 'Record voice notes and save them',
-  render(el) {
-    head(el, this, 'Record a voice note. Press Save to keep it as a file.');
-    const p = add(el, `<div class="panel" style="text-align:center"><div class="big-num" id="t">00:00</div><div class="row" style="justify-content:center;margin-top:12px"><button class="primary big" id="go">🎙 Record</button></div><p class="muted" id="m"></p></div><div class="list" id="l"></div>`);
-    let rec = null, start = 0, tick = 0;
-    const clips = [];
-    const drawList = () => { $(el, '#l').innerHTML = ''; clips.forEach((c, i) => { const it = add($(el, '#l'), `<div class="item"><audio controls src="${c.url}" style="flex:1"></audio><button>💾 Save</button></div>`); it.querySelector('button').onclick = () => tk.call('saveAs', { name: `Voice ${i + 1}.${c.ext}`, dataUrl: c.data }); }); };
-    $(p, '#go').onclick = async () => {
-      if (rec) { rec.stop(); return; }
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        const type = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm'].find((t) => MediaRecorder.isTypeSupported(t)) || '';
-        rec = new MediaRecorder(stream, type ? { mimeType: type } : undefined);
-        const chunks = [];
-        rec.ondataavailable = (e) => chunks.push(e.data);
-        rec.onstop = () => {
-          stream.getTracks().forEach((t) => t.stop()); clearInterval(tick);
-          const blob = new Blob(chunks, { type: rec.mimeType });
-          const fr = new FileReader(); fr.onload = () => { clips.unshift({ url: URL.createObjectURL(blob), data: fr.result, ext: rec.mimeType.includes('mp4') ? 'm4a' : 'webm' }); rec = null; $(p, '#go').textContent = '🎙 Record'; drawList(); }; fr.readAsDataURL(blob);
-        };
-        rec.start(); start = Date.now(); $(p, '#go').textContent = '⏹ Stop';
-        tick = setInterval(() => { const s = Math.floor((Date.now() - start) / 1000); $(p, '#t').textContent = `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`; }, 250);
-      } catch { $(p, '#m').textContent = 'Microphone not available. Allow microphone access and try again.'; }
-    };
-    return () => { if (rec && rec.state !== 'inactive') rec.stop(); clearInterval(tick); };
-  } });
 
 tool({ id: 'speak', name: 'Read Aloud', icon: '🔊', group: 'Media', desc: 'Your device reads any text out loud — Bangla too',
   render(el) {

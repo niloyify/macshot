@@ -31,14 +31,14 @@
       : '';
     if (!how) return '';
     setTimeout(() => { const b = document.getElementById('hideInstall'); if (b) b.onclick = () => { store.set('hideInstall', true, true); b.closest('.banner').remove(); }; });
-    return `<div class="banner info"><div class="grow"><b>📲 Install Jhuli on this phone</b><br><span class="muted">${how}</span></div><button id="hideInstall">OK</button></div>`;
+    return `<div class="banner info"><div class="grow"><b>📲 Install Jhuli on this phone</b><br><span class="muted">${how} <a href="get/">All downloads</a></span></div><button id="hideInstall">OK</button></div>`;
   }
 
   // MARK: home
   function home(el) {
     const user = TK.account && TK.account.user;
     const hello = user ? `Hi ${esc((user.name || user.email).split(' ')[0])} 👋` : 'Welcome 👋';
-    el.innerHTML = `<div class="hero"><h1>${hello}</h1><p class="sub">All your everyday tools in one place — on your phone, laptop and the web.</p>
+    el.innerHTML = `<div class="hero"><h1>${hello}</h1><p class="sub">All your everyday tools in one place — on your phone, laptop and the web.${desktop ? '' : ' <a href="get/">Get the app for every device →</a>'}</p>
       <input id="hs" class="hero-search" type="search" placeholder="What do you want to do? e.g. invoice, QR, convert…" autocomplete="off"></div>
       ${user || ((window.TK_CONFIG || {}).accounts === false && !window.TK_FIREBASE) ? '' : `<div class="banner info"><div class="grow"><b>Use Jhuli on all your devices</b><br><span class="muted">Create a free account to sync notes, to-dos, time tracking and invoices between your phone and computer.</span></div><button class="primary" id="join">Log in / Sign up</button></div>`}
       ${installHint()}<div id="results"></div><div id="blocks"></div>`;
