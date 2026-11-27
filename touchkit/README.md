@@ -5,7 +5,7 @@
 - **Website / phones**: open TouchKit in any browser. On iPhone or Android, tap *Share → Add to Home Screen* and it works like an app, even offline.
 - **Desktop app** (Windows, Mac, Linux): everything above, plus tools that control the computer, like the phone remote, the on-screen Touch Bar, window snap and clipboard history.
 
-## Tools (30+)
+## Tools (127)
 
 | Group | Tools |
 |---|---|
@@ -17,8 +17,21 @@
 | Media | Image Resizer · Images to PDF · Voice Recorder · Read Aloud (Bangla too) · Voice Typing (বাংলা, English…) |
 | Capture | Screenshot & Screen Recording · Camera · Color Picker |
 | Control | Phone Remote* · On-screen Touch Bar* · Window Snap* · Keep Awake |
+| Money | Income Tax BD · Zakat · Mobile Banking Fee · FD / DPS · Sanchayapatra · Compound Interest · Inflation · Savings Goal · Budget Planner · Split Bill · Salary Breakdown · Credit Card Payoff · Selling Price & Profit · VAT · Break-even · Rent vs Buy · Electricity Bill · Gold Price · Inheritance (Faraid) · Provident Fund & Gratuity · Subscription Tracker · Unit Price Compare |
+| Health | BMI & Ideal Weight · Daily Calories · Water Intake · Pregnancy Due Date · Period & Ovulation · Baby Vaccine Schedule · Child Growth Check · Blood Pressure Log · Blood Sugar Log · Medicine Reminder · Sleep Cycle · Blood Donation · Heart Rate Zones · First Aid Guide |
+| Study & Job | GPA / CGPA · Job Age Check · Exam Countdown & Plan · CV Maker · Application Writer · Typing Speed Test · Flashcards · Equation Solver · Formula Solver · Taka in Words · Reading Time & Readability |
+| Faith & Calendar | Prayer Times & Qibla · Sehri & Iftar Times · Bangla Calendar · Hijri Date · Time Zone Meeting Planner · Document Expiry Reminder |
+| Home & Land | Land Area from Sides · Construction Cost · Brick Counter · Paint Needed · Tiles Counter · AC Size · IPS / Solar Sizing · Electric Load & Wiring · Water Tank Size · Shifting Checklist |
+| Farming | Fertilizer Dose · Seed Rate · Mushroom Batch Planner · Fish Pond Stocking · Poultry Feed & Profit · Crop Calendar · Farm Profit Tracker |
+| Shop | Due Book (বাকির খাতা) · Cash Book · Stock / Inventory · Quotation Maker · Money Receipt · Staff Attendance & Salary · Price List Maker |
+| Safety & Files | Password Strength Check · Scam Link Checker · Photo Privacy · File Checksum · Internet Speed Test · Data Pack Compare · PDF Merge & Split · PDF Compress · Photo to Text (OCR, Bangla + English) · Background Remover · WiFi QR · Email Writer · Emergency Numbers & SOS |
+| Daily Life | Trip Cost · Recipe Scaler · Clothes & Shoe Sizes · Birthdays & Anniversaries · Event Countdown |
 
 \* Desktop app only, because a website is not allowed to control the computer.
+
+Big libraries (PDF, OCR) load only when their tool opens. OCR downloads the language data once, then works offline.
+
+**Android app:** `android/build.sh` builds a signed APK with Docker (no Android Studio needed). The signing key lives outside the repo in `~/.touchkit-android`; keep a safe copy, every update must be signed with the same key.
 
 Everything runs on your device. With an account, your tool data is also stored on the TouchKit server so it can sync.
 

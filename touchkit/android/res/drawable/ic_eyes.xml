@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The TouchKit eyes, centred in the adaptive icon's safe zone. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="768" android:viewportHeight="768">
+    <group android:translateX="128" android:translateY="128">
+        <path android:fillColor="#FFFFFF" android:pathData="M116,256a70,96 0 1,0 140,0a70,96 0 1,0 -140,0z"/>
+        <path android:fillColor="#FFFFFF" android:pathData="M256,256a70,96 0 1,0 140,0a70,96 0 1,0 -140,0z"/>
+        <path android:fillColor="#111A2E" android:pathData="M172,282a34,34 0 1,0 68,0a34,34 0 1,0 -68,0z"/>
+        <path android:fillColor="#111A2E" android:pathData="M312,282a34,34 0 1,0 68,0a34,34 0 1,0 -68,0z"/>
+    </group>
+</vector>
