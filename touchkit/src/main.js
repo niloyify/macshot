@@ -22,6 +22,9 @@ const path = require('path');
 const fs = require('fs');
 const input = require('./input');
 const remote = require('./remote');
+const send = require('./send');
+const wallpaper = require('./wallpaper');
+let quitting = false;
 
 // While developing (not in the built app), write messages to dev.log.
 function devLog(...a) {
@@ -204,6 +207,7 @@ function broadcast(what) {
 function openHub(tool) {
   if (hubWin && !hubWin.isDestroyed()) {
     if (tool) hubWin.webContents.send('open-tool', tool);
+    if (process.platform === 'darwin') app.dock.show();
     hubWin.show(); hubWin.focus();
     return;
   }
@@ -212,15 +216,20 @@ function openHub(tool) {
     title: 'Jhuli', backgroundColor: '#0b1220', show: false,
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     autoHideMenuBar: true,
-    webPreferences: { preload: path.join(__dirname, 'hub-preload.js') },
+    webPreferences: { preload: path.join(__dirname, 'hub-preload.js'), backgroundThrottling: false },
   });
   hubWin.loadFile(path.join(__dirname, '..', 'web', 'index.html'), { hash: tool || '' });
+  // Closing only hides the window, so the focus timer and file sharing keep going.
+  hubWin.on('close', (e) => {
+    if (quitting) return;
+    e.preventDefault(); hubWin.hide();
+    if (process.platform === 'darwin') app.dock.hide();
+  });
   hubWin.webContents.setWindowOpenHandler(({ url }) => { if (/^https?:/.test(url)) shell.openExternal(url); return { action: 'deny' }; });
   hubWin.webContents.on('will-navigate', (e, url) => { if (!url.startsWith('file:')) { e.preventDefault(); if (/^https?:/.test(url)) shell.openExternal(url); } });
   hubWin.once('ready-to-show', () => hubWin.show());
-  hubWin.on('closed', () => { hubWin = null; });
+  hubWin.on('closed', () => { hubWin = null; if (process.platform === 'darwin') app.dock.hide(); });
   if (process.platform === 'darwin') app.dock.show();
-  hubWin.on('closed', () => { if (process.platform === 'darwin' && !hubWin) app.dock.hide(); });
 }
 
 function toggleBar() {
@@ -289,7 +298,7 @@ ipcMain.handle('tk', async (_e, cmd, arg = {}) => {
       fs.mkdirSync(videosDir, { recursive: true });
       const file = path.join(videosDir, path.basename(String(arg.name || `Video ${stamp()}.webm`)).replace(/[\\/:*?"<>|]/g, '_'));
       fs.writeFileSync(file, Buffer.from(String(arg.dataUrl).split(',')[1], 'base64'));
-      notify('Video saved', path.basename(file));
+      notify('Saved', path.basename(file));
       return file;
     }
     case 'savePhoto': {
@@ -325,10 +334,41 @@ ipcMain.handle('tk', async (_e, cmd, arg = {}) => {
       fs.mkdirSync(dir, { recursive: true }); return shell.openPath(dir);
     }
     case 'qr': return require('qrcode').toDataURL(String(arg.text || ' '), { margin: 1, width: Math.min(+arg.size || 320, 1200) });
-    case 'openUrl': if (/^https?:\/\//.test(arg.url)) shell.openExternal(arg.url); return true;
+    case 'openUrl': if (/^(https?:\/\/|mailto:)/.test(arg.url)) shell.openExternal(arg.url); return true;
+    // Text next to the eyes in the menu bar (focus timer countdown, One Thing).
+    case 'trayText': {
+      const text = String(arg.text || '').slice(0, 60);
+      try { fs.writeFileSync(path.join(app.getPath('userData'), 'traytext.json'), JSON.stringify(String(arg.keep || ''))); } catch {}
+      if (tray) { if (process.platform === 'darwin') tray.setTitle(text ? ' ' + text : ''); tray.setToolTip(text ? 'Jhuli — ' + text : 'Jhuli'); }
+      return true;
+    }
+    case 'wallpaperNow': try { return { file: await wallpaper.newWallpaper(wallDir, arg.topic) }; } catch (err) { return { error: err.message }; }
+    case 'wallpaperGet': return { ...wallSettings(), current: await wallpaper.currentWallpaper(), dir: wallDir };
+    case 'wallpaperSet': saveWallSettings({ ...wallSettings(), ...arg }); return wallSettings();
+    case 'sendStart': await send.start(path.join(app.getPath('downloads'), 'Jhuli'), (item) => { notify('File received', item.name); broadcast('send'); }); return { ...send.info(), qr: await send.qr() };
+    case 'sendInfo': return send.info();
+    case 'sendNewCode': send.newCode(); return { ...send.info(), qr: await send.qr() };
+    case 'sendOffer': {
+      const r = await dialog.showOpenDialog(hubWin, { title: 'Share files with your phone', properties: ['openFile', 'multiSelections'] });
+      return r.canceled ? send.info() : send.offer(r.filePaths);
+    }
+    case 'sendUnoffer': return send.unoffer(String(arg.id));
+    case 'openPath': return shell.openPath(String(arg.path || app.getPath('downloads')));
   }
   return null;
 });
+
+// MARK: Wallpaper (daily change)
+
+const wallDir = path.join(shotsDir, 'Wallpapers');
+const wallFile = () => path.join(app.getPath('userData'), 'wallpaper.json');
+function wallSettings() { try { return JSON.parse(fs.readFileSync(wallFile(), 'utf8')); } catch { return { daily: false, last: 0, topic: 'any' }; } }
+function saveWallSettings(v) { fs.writeFileSync(wallFile(), JSON.stringify(v)); }
+async function wallpaperCheck() {
+  const w = wallSettings();
+  if (!w.daily || Date.now() - (w.last || 0) < 23 * 3600e3) return;
+  try { await wallpaper.newWallpaper(wallDir, w.topic); saveWallSettings({ ...wallSettings(), last: Date.now() }); } catch {}
+}
 
 // MARK: Tray
 
@@ -355,9 +395,16 @@ function updateTray() {
     { type: 'separator' },
     { label: 'Clipboard History', accelerator: 'Alt+Shift+V', click: () => openHub('clipboard') },
     { label: 'Quick Notes', accelerator: 'Alt+Shift+N', click: () => openHub('notes') },
-    { label: 'Timer and Stopwatch', accelerator: 'Alt+Shift+T', click: () => openHub('timer') },
+    { label: 'Focus Timer (Pomodoro)', accelerator: 'Alt+Shift+T', click: () => openHub('timer') },
+    { label: 'One Thing (menu bar note)', click: () => openHub('onething') },
+    { label: 'Snippets', click: () => openHub('snippets') },
     { label: 'QR Code', accelerator: 'Alt+Shift+Q', click: () => openHub('qr') },
     { label: 'Image Converter', click: () => openHub('image') },
+    { label: 'Video Editor', click: () => openHub('video') },
+    { label: 'Audio Recorder', click: () => openHub('voice') },
+    { label: 'Send Files (Wi-Fi)', accelerator: 'Alt+Shift+S', click: () => openHub('send') },
+    { label: 'New Wallpaper', click: () => wallpaper.newWallpaper(wallDir).then(() => saveWallSettings({ ...wallSettings(), last: Date.now() })).catch((err) => notify('Wallpaper', err.message)) },
+    { label: 'Mail', click: () => openHub('mail') },
     { type: 'separator' },
     { label: 'On-screen Touch Bar', type: 'checkbox', checked: !!barWin, accelerator: 'Alt+Shift+B', click: toggleBar },
     { label: 'Phone Remote…', click: () => openHub('remote') },
@@ -382,7 +429,8 @@ function updateTray() {
 }
 
 function quit() {
-  input.stop(); remote.stop();
+  quitting = true;
+  input.stop(); remote.stop(); send.stop();
   cap.stopAll(() => app.exit(0));
   setTimeout(() => app.exit(0), 5000);
 }
@@ -454,7 +502,65 @@ async function selfTest() {
   note('ocr', /hello\s+jhuli/i.test(text), JSON.stringify(text));
   const pdf = await js(`(async () => { await loadScript('vendor/pdf-lib.min.js'); const d = await PDFLib.PDFDocument.create(); d.addPage([200, 200]); const bytes = await d.save(); await loadScript('vendor/pdf.min.js'); pdfjsLib.GlobalWorkerOptions.workerSrc = 'vendor/pdf.worker.min.js'; const doc = await pdfjsLib.getDocument({ data: bytes }).promise; return doc.numPages; })()`).catch((e) => String(e));
   note('pdf', pdf === 1, pdf);
+
+  // Every tool opens without a page error.
+  const errs = await js(`(async () => { const errs = []; const h = (e) => errs.push(e.message || String(e.reason || e)); window.addEventListener('error', h); window.addEventListener('unhandledrejection', h);
+    for (const t of TK.tools) { try { TK.open(t.id); } catch (e) { errs.push(t.id + ': ' + e.message); } await new Promise((r) => setTimeout(r, 60)); }
+    await new Promise((r) => setTimeout(r, 800)); TK.open(''); return errs.filter((e) => !/Microphone|Permission|NotAllowed|NotFound|Could not start/i.test(e)); })()`);
+  note('all tools open', !errs.length, errs.slice(0, 3).join(' | '));
+
+  // Focus timer + One Thing in the menu bar.
+  await js(`store.set('onething', 'Test one thing'); trayUpdate(); Flow.start('work')`); await wait(1500);
+  const title = process.platform === 'darwin' ? tray.getTitle() : 'n/a';
+  note('focus timer + one thing', /\d\d:\d\d/.test(title) && title.includes('Test one thing'), JSON.stringify(title));
+  await js(`Flow.stop(); store.set('onething', ''); trayUpdate()`);
+
+  // Snippets are kept.
+  const snip = await js(`(() => { const before = store.get('snippets', []); store.set('snippets', [{ id: 'x', name: 'T', text: 'hello' }, ...before]); const ok = store.get('snippets', []).some((s) => s.id === 'x'); store.set('snippets', before); return ok; })()`);
+  note('snippets', snip);
+
+  // Send files: upload from "a phone" and download what the computer shares.
+  try {
+    await send.start(path.join(app.getPath('temp'), 'jhuli-send-test'), () => {});
+    const info = send.info();
+    const base = `http://127.0.0.1:${info.port}`;
+    const up = await fetch(`${base}/api/upload?pin=${info.pin}&name=hello.txt`, { method: 'POST', body: 'hello from the phone' }).then((r) => r.json());
+    const tmp = path.join(app.getPath('temp'), 'jhuli-offer.txt'); fs.writeFileSync(tmp, 'hello from the computer');
+    const id = send.offer([tmp]).offered.slice(-1)[0].id;
+    const down = await fetch(`${base}/api/file?pin=${info.pin}&id=${id}`).then((r) => r.text());
+    const bad = (await fetch(`${base}/api/info?pin=000000x`)).status;
+    note('send files', up.ok && down === 'hello from the computer' && bad === 401, `${info.url} upload ${up.size} B`);
+    send.unoffer(id);
+  } catch (err) { note('send files', false, err.message); }
+
+  // Video editor: two small test clips joined, trimmed, with a caption and no sound.
+  const vid = await js(`(async () => {
+    const clip = async (color, sec) => { const c = document.createElement('canvas'); c.width = 320; c.height = 240; const x = c.getContext('2d');
+      const r = new MediaRecorder(c.captureStream(30)); const ch = []; r.ondataavailable = (e) => ch.push(e.data); r.start(200);
+      const t0 = Date.now(); await new Promise((res) => { const i = setInterval(() => { x.fillStyle = color; x.fillRect(0, 0, 320, 240); x.fillStyle = '#fff'; x.fillText(String(Date.now() - t0), 20, 20); if (Date.now() - t0 > sec * 1000) { clearInterval(i); res(); } }, 33); });
+      await new Promise((res) => { r.onstop = res; r.stop(); }); return URL.createObjectURL(new Blob(ch, { type: r.mimeType })); };
+    const a = await clip('#3d7bff', 1.5), b = await clip('#22c55e', 1.5);
+    const out = await videoExport([{ url: a, start: 0, end: 1 }, { url: b, start: 0.2, end: 1.2 }], { caption: 'Jhuli', audio: 'mute', height: 240 });
+    return { size: out.size, type: out.type };
+  })()`).catch((e) => ({ error: String(e) }));
+  note('video editor', vid.size > 5000, JSON.stringify(vid));
+
+  // Audio recorder chain: mic → noise filter → gain → meter → file.
+  const aud = await js(`(async () => { const ch = await audioChain('', true, 1.5); const r = new MediaRecorder(ch.dest.stream); const parts = []; r.ondataavailable = (e) => parts.push(e.data); r.start(200);
+    let peak = 0; const t0 = Date.now(); while (Date.now() - t0 < 2000) { peak = Math.max(peak, audioLevel(ch.meter)); await new Promise((x) => setTimeout(x, 50)); }
+    await new Promise((x) => { r.onstop = x; r.stop(); }); ch.close(); const b = new Blob(parts); return { size: b.size, peak: +peak.toFixed(4) }; })()`).catch((e) => ({ error: String(e) }));
+  note('audio recorder', aud.size > 1000, JSON.stringify(aud));
   hubWin.destroy();
+
+  // Wallpaper: set a new free photo, check it, then put the old one back.
+  try {
+    const before = await wallpaper.currentWallpaper();
+    const file = await wallpaper.newWallpaper(path.join(app.getPath('temp'), 'jhuli-wall-test'));
+    await wait(1500); const now = await wallpaper.currentWallpaper();
+    if (before && fs.existsSync(before)) await wallpaper.setWallpaper(before);
+    const same = (a, b) => { try { return fs.realpathSync(a) === fs.realpathSync(b); } catch { return false; } };
+    note('wallpaper', process.platform !== 'darwin' || same(now, file), `${path.basename(file)} (old one restored)`);
+  } catch (err) { note('wallpaper', false, err.message); }
 
   const video = await cap.recordFor('screen', 4000); note('recording', size(video), video);
   const sound = await cap.recordFor('sound', 4000); note('sound', size(sound), sound);
@@ -485,6 +591,8 @@ app.whenReady().then(async () => {
 
   tray = new Tray(icon('tray.png'));
   updateTray();
+  // One Thing stays in the menu bar after a restart.
+  try { const keep = JSON.parse(fs.readFileSync(path.join(app.getPath('userData'), 'traytext.json'), 'utf8')); if (keep && process.platform === 'darwin') tray.setTitle(' ' + keep); } catch {}
   tray.on('click', () => tray.popUpContextMenu());
 
   keys = {
@@ -494,7 +602,7 @@ app.whenReady().then(async () => {
     'Alt+Shift+5': () => cap.toggle('screen'), 'Alt+Shift+6': () => cap.toggle('sound'),
     'Alt+Shift+C': () => cap.pickColor(), 'Alt+Shift+V': () => openHub('clipboard'),
     'Alt+Shift+N': () => openHub('notes'), 'Alt+Shift+T': () => openHub('timer'),
-    'Alt+Shift+Q': () => openHub('qr'), 'Alt+Shift+B': toggleBar,
+    'Alt+Shift+Q': () => openHub('qr'), 'Alt+Shift+S': () => openHub('send'), 'Alt+Shift+B': toggleBar,
     'Alt+Shift+Left': () => input.send('snap left'), 'Alt+Shift+Right': () => input.send('snap right'),
     'Alt+Shift+Up': () => input.send('snap max'),
   };
@@ -505,6 +613,7 @@ app.whenReady().then(async () => {
   loadClips();
   watchClipboard();
   startRemote().catch(() => {});
+  if (!process.argv.includes('--test')) { setTimeout(wallpaperCheck, 20000); setInterval(wallpaperCheck, 3600e3); }
 
   if (process.argv.includes('--test')) return selfTest();
   if (process.argv.includes('--bar')) toggleBar();
@@ -512,4 +621,5 @@ app.whenReady().then(async () => {
 });
 
 app.on('window-all-closed', (e) => e.preventDefault()); // keep running in the tray
-app.on('will-quit', () => { globalShortcut.unregisterAll(); input.stop(); remote.stop(); });
+app.on('before-quit', () => { quitting = true; });
+app.on('will-quit', () => { globalShortcut.unregisterAll(); input.stop(); remote.stop(); send.stop(); });

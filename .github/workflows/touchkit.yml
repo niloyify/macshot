@@ -46,6 +46,25 @@ jobs:
           codesign --verify --verbose=2 "$APP"
           ditto -c -k --keepParent "$APP" dist/Jhuli-mac.zip
 
+      # Stable file names, so https://github.com/niloyify/macshot/releases/latest/download/<name> always works.
+      - name: Copies with stable names
+        shell: bash
+        run: |
+          cd dist
+          for f in Jhuli-Setup-*.exe; do [ -e "$f" ] && cp "$f" Jhuli-Setup.exe; done
+          for f in Jhuli-Portable-*.exe; do [ -e "$f" ] && cp "$f" Jhuli-Portable.exe; done
+          for f in Jhuli-*.AppImage; do [ -e "$f" ] && cp "$f" Jhuli.AppImage; done
+          for f in jhuli_*_amd64.deb; do [ -e "$f" ] && cp "$f" jhuli_amd64.deb; done
+          true
+
+      # The Android APK is built and signed on the Mac (android/build.sh) and kept in
+      # android/release/; the Linux job attaches it.
+      - name: Android APK
+        if: runner.os == 'Linux'
+        run: |
+          cp android/release/Jhuli.apk dist/Jhuli.apk
+          cp android/release/Jhuli.apk "dist/Jhuli-$(node -p "require('./package.json').version").apk"
+
       - name: Attach to the release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
@@ -60,10 +79,13 @@ jobs:
             - Windows: Jhuli-Setup-*.exe (installer) or Jhuli-Portable-*.exe (no install)
             - macOS: Jhuli-mac.zip (unzip, move Jhuli to Applications, right-click → Open the first time)
             - Linux: Jhuli-*.AppImage or the .deb package (install xdotool for the phone remote)
-            - Android: Jhuli-*.apk (when attached below; install it with "allow from this source")
-            - iPhone and any browser: https://niloyify.github.io/macshot/ (Safari → Share → Add to Home Screen)
+            - Android: Jhuli.apk (allow installing from this source when Android asks)
+            - iPhone, iPad, tablets, Chromebooks and any browser: https://niloyify.github.io/macshot/ (Safari → Share → Add to Home Screen)
+
+            Download page: https://niloyify.github.io/macshot/get/
           files: |
             touchkit/dist/*.exe
             touchkit/dist/*.AppImage
             touchkit/dist/*.deb
+            touchkit/dist/*.apk
             touchkit/dist/Jhuli-mac.zip

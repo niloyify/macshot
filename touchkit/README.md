@@ -8,7 +8,11 @@
 - **Android**: the Jhuli APK (camera photo and video, voice, notifications, files) — or add the website to the home screen.
 - **Desktop app** (Windows, Mac, Linux): everything above, plus tools that control the computer, like the phone remote, the on-screen Touch Bar, window snap and clipboard history.
 
-## Tools (127)
+## Tools (133)
+
+**Download page:** https://niloyify.github.io/macshot/get/ · Android APK: https://github.com/niloyify/macshot/releases/latest/download/Jhuli.apk
+
+New in 3.2 (replacing separate apps): **Focus Timer** with Pomodoro cycles and a menu bar countdown (Flow), **One Thing** in the menu bar, **Snippets** next to clipboard history (PastePal), **Send Files (Wi-Fi)** between phone and computer with a QR code (LocalSend), **Video Editor** — trim, join, caption, mute or add music, MP4 (CapCut basics), **Audio Recorder** with level meter, mic choice, volume boost and noise reduction (RODE basics), **Wallpaper Changer** with a free photo every day (Unsplash Wallpapers, desktop) and **Mail** shortcuts for Gmail / Outlook.
 
 | Group | Tools |
 |---|---|

@@ -1,7 +1,7 @@
 {
   "name": "jhuli",
   "productName": "Jhuli",
-  "version": "3.1.0",
+  "version": "3.2.0",
   "description": "Jhuli (ঝুলি — TouchKit and MacShot in one app): 120+ everyday tools plus screenshots, screen and sound recording, OCR, annotate and colour picker in one simple app for Windows, macOS, Linux, phones and the web, with one account synced everywhere.",
   "main": "src/main.js",
   "author": {

@@ -15,3 +15,5 @@ if [ ! -f "$KEYS/touchkit.jks" ]; then
     -alias touchkit -keyalg RSA -keysize 4096 -validity 36500 -storepass "$(cat "$KEYS/password")" -dname "CN=TouchKit, O=niloyify"
 fi
 docker run --rm --platform linux/amd64 -v "$(cd .. && pwd):/app" -v "$KEYS:/keys:ro" touchkit-android-sdk bash /app/android/make-apk.sh "$VERSION" "$CODE"
+# The release workflow attaches this copy to the GitHub release.
+mkdir -p release && cp "out/Jhuli-$VERSION.apk" release/Jhuli.apk
