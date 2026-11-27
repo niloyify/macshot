@@ -1,8 +1,11 @@
 # 👀 TouchKit
 
+**TouchKit 3.0 is one app with everything from TouchKit and MacShot.** On the computer it lives in the tray / menu bar as a pair of eyes (red while recording) and has all the screen tools of MacShot: area and full-screen screenshots, copy text from the screen, annotate, colour picker, screen recording and sound-only recording.
+
 **All your everyday tools in one simple app, on every device:** Windows, Mac, Linux, iPhone, Android and the web. **One account** keeps your notes, to-dos, time tracking and invoices in sync everywhere.
 
-- **Website / phones**: open TouchKit in any browser. On iPhone or Android, tap *Share → Add to Home Screen* and it works like an app, even offline.
+- **Website / iPhone**: open https://niloyify.github.io/macshot/ in any browser. On iPhone or iPad, tap *Share → Add to Home Screen* in Safari and it works like an app, even offline (an App Store app needs an Apple developer account).
+- **Android**: the TouchKit APK (camera photo and video, voice, notifications, files) — or add the website to the home screen.
 - **Desktop app** (Windows, Mac, Linux): everything above, plus tools that control the computer, like the phone remote, the on-screen Touch Bar, window snap and clipboard history.
 
 ## Tools (127)
@@ -15,7 +18,7 @@
 | Calculate | Calculator · Currency Converter (live rates) · Percentage · Date & Age · Loan & EMI |
 | Text & Data | Text Tools · Password Generator · QR Code Maker · JSON · Encode / Decode · Unit Converter (incl. bigha, katha, decimal, maund) |
 | Media | Image Resizer · Images to PDF · Voice Recorder · Read Aloud (Bangla too) · Voice Typing (বাংলা, English…) |
-| Capture | Screenshot & Screen Recording · Camera · Color Picker |
+| Capture | Screenshot (area / full screen) · Annotate · Copy text from screen · Screen & Sound Recording · Camera (photo + video) · Color Picker |
 | Control | Phone Remote* · On-screen Touch Bar* · Window Snap* · Keep Awake |
 | Money | Income Tax BD · Zakat · Mobile Banking Fee · FD / DPS · Sanchayapatra · Compound Interest · Inflation · Savings Goal · Budget Planner · Split Bill · Salary Breakdown · Credit Card Payoff · Selling Price & Profit · VAT · Break-even · Rent vs Buy · Electricity Bill · Gold Price · Inheritance (Faraid) · Provident Fund & Gratuity · Subscription Tracker · Unit Price Compare |
 | Health | BMI & Ideal Weight · Daily Calories · Water Intake · Pregnancy Due Date · Period & Ovulation · Baby Vaccine Schedule · Child Growth Check · Blood Pressure Log · Blood Sugar Log · Medicine Reminder · Sleep Cycle · Blood Donation · Heart Rate Zones · First Aid Guide |
@@ -51,11 +54,19 @@ The desktop app talks to the server set in `web/config.js` (`server`), or the on
 
 | Keys | Action |
 |---|---|
-| Alt+Shift+Space | Open TouchKit |
-| Alt+Shift+1 | Screenshot (saved to Pictures/TouchKit and copied) |
+| Alt+Shift+Space or M | Open TouchKit (all tools) |
+| Alt+Shift+1 | Capture an area (drag a rectangle, Esc cancels) |
+| Alt+Shift+2 | Copy text from the screen (OCR, Bangla + English) |
+| Alt+Shift+3 | Capture the full screen |
+| Alt+Shift+4 | Capture and annotate (arrow, box, pen, highlight, text, steps, blur) |
 | Alt+Shift+5 | Start / stop screen recording |
-| Alt+Shift+T | Show / hide the on-screen Touch Bar |
+| Alt+Shift+6 | Start / stop sound recording (microphone only) |
+| Alt+Shift+C | Pick a colour from the screen |
 | Alt+Shift+V | Clipboard history |
+| Alt+Shift+N | Quick notes |
+| Alt+Shift+T | Timer and stopwatch |
+| Alt+Shift+Q | QR code |
+| Alt+Shift+B | Show / hide the on-screen Touch Bar |
 | Alt+Shift+← / → / ↑ | Window to left half / right half / full screen |
 
 On a Mac, Alt is the Option key.
@@ -81,7 +92,7 @@ On macOS, build the input helper first:
 swiftc -O native/mac/input.swift -o native/mac/input
 ```
 
-`npm start -- --test` takes a screenshot and a 4-second recording, then quits. `--bar` opens the Touch Bar at start and `--hidden` starts in the tray only.
+`npm start -- --test` checks the screen tools (full and area screenshot, colour picker, annotate), the OCR and PDF tools inside the app, a 4-second screen recording and a 4-second sound recording, then quits. `--bar` opens the Touch Bar at start and `--hidden` starts in the tray only.
 
 How it fits together:
 

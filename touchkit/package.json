@@ -1,8 +1,8 @@
 {
   "name": "touchkit",
   "productName": "TouchKit",
-  "version": "2.1.0",
-  "description": "TouchKit: 120+ everyday tools in one simple app for Windows, macOS, Linux, phones and the web, with one account synced everywhere.",
+  "version": "3.0.0",
+  "description": "TouchKit (with MacShot inside): 120+ everyday tools plus screenshots, screen and sound recording, OCR, annotate and colour picker in one simple app for Windows, macOS, Linux, phones and the web, with one account synced everywhere.",
   "main": "src/main.js",
   "author": {
     "name": "niloyify",
@@ -42,7 +42,7 @@
       "identity": null,
       "extendInfo": {
         "LSUIElement": true,
-        "NSMicrophoneUsageDescription": "TouchKit records your voice with screen recordings.",
+        "NSMicrophoneUsageDescription": "TouchKit records your voice with screen recordings, sound recordings and videos.",
         "NSCameraUsageDescription": "TouchKit takes photos with your camera.",
         "NSScreenCaptureUsageDescription": "TouchKit takes screenshots and records the screen.",
         "NSLocalNetworkUsageDescription": "TouchKit lets your phone control this computer over Wi-Fi."

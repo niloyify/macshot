@@ -4,7 +4,7 @@
 (() => {
   const onPages = location.hostname.endsWith('github.io') || !!window.AndroidTK;
   window.TK_CONFIG = {
-    version: '2.1.0',
+    version: '3.0.0',
     server: location.protocol.startsWith('http') ? '' : 'http://localhost:8080',
     accounts: !onPages,
     downloads: 'https://github.com/niloyify/macshot/releases?q=touchkit',

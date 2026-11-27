@@ -1,9 +1,14 @@
 // TouchKit: an all-in-one helper for everyday computer work, for Windows,
 // macOS and Linux, with a phone remote that works on any phone browser.
+// Since 3.0 it also has everything from MacShot (screen capture tools).
 //
-//   Alt+Shift+Space  open TouchKit (all tools)
-//   Alt+Shift+1      screenshot          Alt+Shift+5  start / stop recording
-//   Alt+Shift+T      on-screen Touch Bar Alt+Shift+V  clipboard history
+//   Alt+Shift+Space / M  open TouchKit (all tools)
+//   Alt+Shift+1  capture an area          Alt+Shift+3  capture the full screen
+//   Alt+Shift+2  copy text from screen    Alt+Shift+4  capture and annotate
+//   Alt+Shift+5  screen recording         Alt+Shift+6  sound recording (microphone)
+//   Alt+Shift+C  colour picker            Alt+Shift+V  clipboard history
+//   Alt+Shift+N  quick notes              Alt+Shift+T  timer and stopwatch
+//   Alt+Shift+Q  QR code                  Alt+Shift+B  on-screen Touch Bar
 //   Alt+Shift+←/→/↑  window to the left half / right half / full screen
 //
 // Screenshots and photos: Pictures/TouchKit. Recordings: Videos/TouchKit.
@@ -34,10 +39,6 @@ const videosDir = path.join(app.getPath('videos'), 'TouchKit');
 let tray = null;
 let hubWin = null;
 let barWin = null;
-let recorderWin = null;
-let recording = false;
-let recordFile = null;
-let recordStream = null;
 let awakeId = null;
 let phones = []; // reply functions of connected phones
 
@@ -70,104 +71,17 @@ async function screenSourceFor(display, thumbnailSize = { width: 0, height: 0 })
   return sources.find((s) => String(s.display_id) === String(display.id)) || sources[0];
 }
 
-// MARK: Screenshot
+// MARK: Screen capture (screenshots, OCR, annotate, colours, screen and sound recording)
 
-async function takeScreenshot() {
-  try {
-    const display = currentDisplay();
-    const size = {
-      width: Math.round(display.size.width * display.scaleFactor),
-      height: Math.round(display.size.height * display.scaleFactor),
-    };
-    // Give the tray menu time to close so it is not in the picture.
-    await new Promise((r) => setTimeout(r, 300));
-    // The first capture after start can come back empty (seen on macOS), so try a few times.
-    let source = null;
-    for (let i = 0; i < 4 && (!source || source.thumbnail.isEmpty()); i++) {
-      if (i) await new Promise((r) => setTimeout(r, 200));
-      source = await screenSourceFor(display, size);
-    }
-    if (!source || source.thumbnail.isEmpty()) throw new Error('The screen could not be captured.');
-    fs.mkdirSync(shotsDir, { recursive: true });
-    const file = path.join(shotsDir, `Screenshot ${stamp()}.png`);
-    fs.writeFileSync(file, source.thumbnail.toPNG());
-    clipboard.writeImage(source.thumbnail);
-    notify('Screenshot saved', `${path.basename(file)} (also copied to the clipboard)`); toPhones('Screenshot saved');
-    return file;
-  } catch (err) {
-    showPermissionHelp(err);
-    return null;
-  }
-}
-
-// MARK: Screen recording
-
-async function startRecording() {
-  if (recording) return;
-  const display = currentDisplay();
-  const source = await screenSourceFor(display);
-  if (!source) return showPermissionHelp(new Error('No screen was found to record.'));
-
-  if (process.platform === 'darwin') {
-    // Ask for the microphone; recording still works without it.
-    try { await systemPreferences.askForMediaAccess('microphone'); } catch {}
-  }
-
-  // The recorder page asks for the screen with getDisplayMedia; answer with this screen.
-  // 'loopback' adds the computer's own sound (works on Windows; ignored elsewhere).
-  session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
-    callback(process.platform === 'win32' ? { video: source, audio: 'loopback' } : { video: source });
-  });
-
-  fs.mkdirSync(videosDir, { recursive: true });
-  recording = true;
-  updateTray();
-
-  recorderWin = new BrowserWindow({
-    show: false,
-    webPreferences: { preload: path.join(__dirname, 'preload.js'), backgroundThrottling: false },
-  });
-  recorderWin.loadFile(path.join(__dirname, 'recorder.html'));
-}
-
-function stopRecording() {
-  if (!recording || !recorderWin) return;
-  recorderWin.webContents.send('stop');
-}
-
-function toggleRecording() {
-  if (recording) stopRecording(); else startRecording();
-}
-
-ipcMain.handle('recording-started', (_e, ext) => {
-  recordFile = path.join(videosDir, `Recording ${stamp()}.${ext}`);
-  recordStream = fs.createWriteStream(recordFile);
-  notify('Recording started', 'Press Alt+Shift+5 or use the tray menu to stop.'); toPhones('Recording…');
+const isTest = () => !!process.env.SHOTKIT_TEST;
+const cap = require('./capture')({
+  shotsDir, videosDir, notify, isTest, openHub, broadcast,
+  changed: () => { updateTray(); broadcast('state'); },
+  permissionHelp: (err) => showPermissionHelp(err),
+  micHelp: (err) => showMicHelp(err),
 });
-
-ipcMain.handle('recording-chunk', (_e, data) => {
-  if (recordStream) recordStream.write(Buffer.from(data));
-});
-
-ipcMain.handle('recording-stopped', async (_e, error) => {
-  const file = recordFile;
-  await new Promise((r) => (recordStream ? recordStream.end(r) : r()));
-  recordStream = null;
-  recordFile = null;
-  recording = false;
-  updateTray();
-  if (recorderWin) { recorderWin.destroy(); recorderWin = null; }
-  if (error) {
-    showPermissionHelp(new Error(error));
-    if (app.testDone) app.testDone(null);
-    return;
-  }
-  if (file && fs.existsSync(file)) {
-    notify('Recording saved', path.basename(file));
-    if (!process.env.SHOTKIT_TEST) shell.showItemInFolder(file);
-  }
-  if (app.testDone) app.testDone(file);
-});
+const takeScreenshot = () => cap.captureFull().then((f) => { if (f) toPhones('Screenshot saved'); return f; });
+const toggleRecording = () => cap.toggle('screen');
 
 // MARK: Keep awake
 
@@ -293,11 +207,21 @@ function toggleBar() {
 ipcMain.handle('tk', async (_e, cmd, arg = {}) => {
   switch (cmd) {
     case 'state': return {
-      platform: process.platform, version: app.getVersion(), recording,
+      platform: process.platform, version: app.getVersion(), recording: cap.isRecording('screen'), sound: cap.isRecording('sound'),
       awake: awakeId !== null, bar: !!barWin, accessibility: await input.hasPermission(),
       remote: remote.info(),
     };
     case 'screenshot': return takeScreenshot();
+    case 'captureArea': hubWin && hubWin.hide(); return cap.captureArea().finally(() => hubWin && !hubWin.isDestroyed() && hubWin.show());
+    case 'captureText': hubWin && hubWin.hide(); return cap.captureText();
+    case 'captureAnnotate': hubWin && hubWin.hide(); return cap.captureAnnotate();
+    case 'annotateLast': return cap.annotateLast();
+    case 'annotateImage': return !!cap.annotateDataUrl(arg.dataUrl);
+    case 'sound': return cap.toggle('sound');
+    case 'pickColor': { hubWin && hubWin.hide(); try { return await cap.pickColor(); } finally { if (hubWin && !hubWin.isDestroyed()) hubWin.show(); } }
+    case 'takeOcrImage': return cap.takeOcrImage();
+    case 'takePickedColors': return cap.takePickedColors();
+    case 'notify': return notify(String(arg.title || 'TouchKit'), String(arg.body || ''));
     case 'record': return toggleRecording();
     case 'awake': return toggleAwake();
     case 'bar': return toggleBar();
@@ -320,9 +244,16 @@ ipcMain.handle('tk', async (_e, cmd, arg = {}) => {
     case 'cameraAccess':
       if (process.platform === 'darwin') return systemPreferences.askForMediaAccess('camera');
       return true;
+    case 'saveVideo': {
+      fs.mkdirSync(videosDir, { recursive: true });
+      const file = path.join(videosDir, path.basename(String(arg.name || `Video ${stamp()}.webm`)).replace(/[\\/:*?"<>|]/g, '_'));
+      fs.writeFileSync(file, Buffer.from(String(arg.dataUrl).split(',')[1], 'base64'));
+      notify('Video saved', path.basename(file));
+      return file;
+    }
     case 'savePhoto': {
       fs.mkdirSync(shotsDir, { recursive: true });
-      const file = path.join(shotsDir, `Photo ${stamp()}.png`);
+      const file = path.join(shotsDir, `Photo ${stamp()}.${String(arg.dataUrl).startsWith('data:image/jpeg') ? 'jpg' : 'png'}`);
       fs.writeFileSync(file, Buffer.from(String(arg.dataUrl).split(',')[1], 'base64'));
       notify('Photo saved', path.basename(file));
       return file;
@@ -363,18 +294,32 @@ ipcMain.handle('tk', async (_e, cmd, arg = {}) => {
 function updateTray() {
   broadcast('state');
   if (!tray) return;
-  tray.setImage(icon(recording ? 'tray-red.png' : 'tray.png'));
-  tray.setToolTip(recording ? 'TouchKit — recording' : 'TouchKit');
+  const busy = cap.isRecording();
+  tray.setImage(icon(busy ? 'tray-red.png' : 'tray.png'));
+  tray.setToolTip(busy ? 'TouchKit — recording' : 'TouchKit');
+  const open = (dir) => () => { fs.mkdirSync(dir, { recursive: true }); shell.openPath(dir); };
   tray.setContextMenu(Menu.buildFromTemplate([
-    { label: 'Open TouchKit', accelerator: 'Alt+Shift+Space', click: () => openHub() },
+    { label: 'Open TouchKit (all tools)', accelerator: 'Alt+Shift+Space', click: () => openHub() },
     { type: 'separator' },
-    { label: 'Capture Screen', accelerator: 'Alt+Shift+1', click: takeScreenshot },
-    { label: recording ? 'Stop Recording' : 'Start Recording', accelerator: 'Alt+Shift+5', click: toggleRecording },
+    { label: 'Capture Area', accelerator: 'Alt+Shift+1', click: () => cap.captureArea() },
+    { label: 'Capture Full Screen', accelerator: 'Alt+Shift+3', click: () => takeScreenshot() },
+    { label: 'Capture and Annotate', accelerator: 'Alt+Shift+4', click: () => cap.captureAnnotate() },
+    { label: 'Annotate Last Screenshot', click: () => cap.annotateLast() },
+    { label: 'Copy Text from Screen', accelerator: 'Alt+Shift+2', click: () => cap.captureText() },
+    { label: 'Pick Colour from Screen', accelerator: 'Alt+Shift+C', click: () => cap.pickColor() },
     { label: 'Take a Photo (Camera)', click: () => openHub('camera') },
     { type: 'separator' },
-    { label: 'On-screen Touch Bar', type: 'checkbox', checked: !!barWin, accelerator: 'Alt+Shift+T', click: toggleBar },
-    { label: 'Phone Remote…', click: () => openHub('remote') },
+    { label: cap.isRecording('screen') ? 'Stop Recording' : 'Start Screen Recording', accelerator: 'Alt+Shift+5', click: () => cap.toggle('screen') },
+    { label: cap.isRecording('sound') ? 'Stop Sound Recording' : 'Start Sound Recording', accelerator: 'Alt+Shift+6', click: () => cap.toggle('sound') },
+    { type: 'separator' },
     { label: 'Clipboard History', accelerator: 'Alt+Shift+V', click: () => openHub('clipboard') },
+    { label: 'Quick Notes', accelerator: 'Alt+Shift+N', click: () => openHub('notes') },
+    { label: 'Timer and Stopwatch', accelerator: 'Alt+Shift+T', click: () => openHub('timer') },
+    { label: 'QR Code', accelerator: 'Alt+Shift+Q', click: () => openHub('qr') },
+    { label: 'Image Converter', click: () => openHub('image') },
+    { type: 'separator' },
+    { label: 'On-screen Touch Bar', type: 'checkbox', checked: !!barWin, accelerator: 'Alt+Shift+B', click: toggleBar },
+    { label: 'Phone Remote…', click: () => openHub('remote') },
     { label: 'Window', submenu: [
       { label: 'Left Half', accelerator: 'Alt+Shift+Left', click: () => input.send('snap left') },
       { label: 'Right Half', accelerator: 'Alt+Shift+Right', click: () => input.send('snap right') },
@@ -383,22 +328,22 @@ function updateTray() {
     ] },
     { label: 'Keep Awake', type: 'checkbox', checked: awakeId !== null, click: toggleAwake },
     { type: 'separator' },
-    { label: 'Open Screenshots Folder', click: () => { fs.mkdirSync(shotsDir, { recursive: true }); shell.openPath(shotsDir); } },
-    { label: 'Open Recordings Folder', click: () => { fs.mkdirSync(videosDir, { recursive: true }); shell.openPath(videosDir); } },
+    { label: 'Open Screenshots Folder', click: open(shotsDir) },
+    { label: 'Open Recordings Folder', click: open(videosDir) },
+    {
+      label: 'Start at Login', type: 'checkbox', visible: process.platform !== 'linux',
+      checked: app.getLoginItemSettings().openAtLogin,
+      click: (item) => app.setLoginItemSettings({ openAtLogin: item.checked, args: ['--hidden'] }),
+    },
     { type: 'separator' },
-    { label: 'Quit TouchKit', click: quit },
+    { label: `Quit TouchKit ${app.getVersion()}`, click: quit },
   ]));
 }
 
 function quit() {
   input.stop(); remote.stop();
-  if (recording) {
-    app.testDone = () => app.exit(0);
-    stopRecording();
-    setTimeout(() => app.exit(0), 5000);
-  } else {
-    app.quit();
-  }
+  cap.stopAll(() => app.exit(0));
+  setTimeout(() => app.exit(0), 5000);
 }
 
 function showPermissionHelp(err) {
@@ -406,12 +351,64 @@ function showPermissionHelp(err) {
   const detail = (err && err.message ? err.message + '\n\n' : '') + (mac
     ? 'Allow TouchKit under System Settings → Privacy & Security → Screen & System Audio Recording (and Microphone), then quit and reopen TouchKit.'
     : 'Check that screen capture is allowed on this computer, then try again.');
-  if (process.env.SHOTKIT_TEST) { console.error('ERROR', detail); return; }
+  if (isTest()) { console.error('ERROR', detail); return; }
   const choice = dialog.showMessageBoxSync({
     type: 'warning', message: 'TouchKit could not capture the screen', detail,
     buttons: mac ? ['Open Settings', 'Cancel'] : ['OK'],
   });
   if (mac && choice === 0) shell.openExternal('x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture');
+}
+
+function showMicHelp(error) {
+  const mac = process.platform === 'darwin';
+  const detail = (error ? error + '\n\n' : '') + (mac
+    ? 'Allow TouchKit under System Settings → Privacy & Security → Microphone, then try again.'
+    : 'Check that a microphone is connected and allowed for TouchKit, then try again.');
+  if (isTest()) { console.error('ERROR', detail); return; }
+  const choice = dialog.showMessageBoxSync({
+    type: 'warning', message: 'TouchKit could not use the microphone', detail,
+    buttons: mac ? ['Open Settings', 'Cancel'] : ['OK'],
+  });
+  if (mac && choice === 0) shell.openExternal('x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone');
+}
+
+// MARK: Self-test (`TouchKit --test`): checks the capture features, the OCR and
+// PDF tools inside the app, then quits with 0 when everything worked.
+
+async function selfTest() {
+  process.env.SHOTKIT_TEST = '1';
+  setTimeout(() => { console.log('test timed out'); app.exit(2); }, 240000);
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  const size = (f) => (f && fs.existsSync(f) ? fs.statSync(f).size : 0);
+  const results = {};
+  const note = (k, ok, info) => { results[k] = !!ok; console.log(`${k}:`, ok ? 'ok' : 'FAILED', info ?? ''); };
+
+  const shot = await takeScreenshot(); note('screenshot', size(shot), shot);
+  const area = await cap.captureArea(); note('area', size(area), area);
+  const hex = await cap.pickColor(); note('colour picker', /^#[0-9A-F]{6}$/.test(hex || ''), hex);
+  const annotated = await cap.annotateTest(area || shot); note('annotate', size(annotated), annotated);
+  console.log('remote:', remote.info().url);
+
+  // The hub (all tools) with OCR on a picture of known text, like Alt+Shift+2 does.
+  openHub('home');
+  await new Promise((r) => (hubWin.webContents.isLoading() ? hubWin.webContents.once('did-finish-load', r) : r()));
+  await wait(800);
+  const js = (code) => hubWin.webContents.executeJavaScript(code);
+  const tools = await js('TK.tools.length'); note('tools', tools > 100, `${tools} tools`);
+  const picture = await js(`(() => { const c = document.createElement('canvas'); c.width = 900; c.height = 200; const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, 900, 200); x.fillStyle = '#000'; x.font = '64px Arial'; x.fillText('Hello TouchKit 2026', 30, 120); return c.toDataURL(); })()`);
+  cap.setOcrImage(picture); openHub('ocr'); broadcast('ocr');
+  let text = '';
+  for (let i = 0; i < 90 && !text; i++) { await wait(1000); text = await js(`(document.querySelector('#out') || {}).value || ''`); }
+  note('ocr', /hello\s+touchkit/i.test(text), JSON.stringify(text));
+  const pdf = await js(`(async () => { await loadScript('vendor/pdf-lib.min.js'); const d = await PDFLib.PDFDocument.create(); d.addPage([200, 200]); const bytes = await d.save(); await loadScript('vendor/pdf.min.js'); pdfjsLib.GlobalWorkerOptions.workerSrc = 'vendor/pdf.worker.min.js'; const doc = await pdfjsLib.getDocument({ data: bytes }).promise; return doc.numPages; })()`).catch((e) => String(e));
+  note('pdf', pdf === 1, pdf);
+  hubWin.destroy();
+
+  const video = await cap.recordFor('screen', 4000); note('recording', size(video), video);
+  const sound = await cap.recordFor('sound', 4000); note('sound', size(sound), sound);
+  const failed = Object.keys(results).filter((k) => !results[k]);
+  console.log(failed.length ? `FAILED: ${failed.join(', ')}` : 'ALL OK');
+  app.exit(failed.length ? 1 : 0);
 }
 
 // MARK: Start
@@ -422,38 +419,36 @@ app.whenReady().then(async () => {
   // The camera tool and the recorder ask for camera / microphone; allow them for our own pages.
   session.defaultSession.setPermissionRequestHandler((wc, perm, cb) => cb(['media', 'clipboard-read', 'clipboard-sanitized-write'].includes(perm)));
 
+  // An Edit menu makes copy, paste and undo work in the windows on macOS.
+  Menu.setApplicationMenu(Menu.buildFromTemplate([
+    ...(process.platform === 'darwin' ? [{ role: 'appMenu' }] : []),
+    { role: 'editMenu' }, { role: 'windowMenu' },
+  ]));
+
   tray = new Tray(icon('tray.png'));
   updateTray();
   tray.on('click', () => tray.popUpContextMenu());
 
   const keys = {
-    'Alt+Shift+Space': () => openHub(), 'Alt+Shift+1': takeScreenshot, 'Alt+Shift+5': toggleRecording,
-    'Alt+Shift+T': toggleBar, 'Alt+Shift+V': () => openHub('clipboard'),
+    'Alt+Shift+Space': () => openHub(), 'Alt+Shift+M': () => openHub(),
+    'Alt+Shift+1': () => cap.captureArea(), 'Alt+Shift+2': () => cap.captureText(),
+    'Alt+Shift+3': () => takeScreenshot(), 'Alt+Shift+4': () => cap.captureAnnotate(),
+    'Alt+Shift+5': () => cap.toggle('screen'), 'Alt+Shift+6': () => cap.toggle('sound'),
+    'Alt+Shift+C': () => cap.pickColor(), 'Alt+Shift+V': () => openHub('clipboard'),
+    'Alt+Shift+N': () => openHub('notes'), 'Alt+Shift+T': () => openHub('timer'),
+    'Alt+Shift+Q': () => openHub('qr'), 'Alt+Shift+B': toggleBar,
     'Alt+Shift+Left': () => input.send('snap left'), 'Alt+Shift+Right': () => input.send('snap right'),
     'Alt+Shift+Up': () => input.send('snap max'),
   };
-  for (const [k, fn] of Object.entries(keys)) { try { globalShortcut.register(k, fn); } catch {} }
+  for (const [k, fn] of Object.entries(keys)) {
+    try { if (!globalShortcut.register(k, fn)) devLog('shortcut taken:', k); } catch {}
+  }
 
   loadClips();
   watchClipboard();
   startRemote().catch(() => {});
 
-  // Self-test: `TouchKit --test` takes one screenshot and records 4 seconds, then quits.
-  if (process.argv.includes('--test')) {
-    process.env.SHOTKIT_TEST = '1';
-    const shot = await takeScreenshot();
-    console.log('screenshot:', shot);
-    console.log('remote:', remote.info().url);
-    app.testDone = (file) => {
-      const size = file && fs.existsSync(file) ? fs.statSync(file).size : 0;
-      console.log('recording:', file, size, 'bytes');
-      app.exit(shot && size > 0 ? 0 : 1);
-    };
-    await startRecording();
-    setTimeout(stopRecording, 4000);
-    setTimeout(() => { console.log('test timed out'); app.exit(2); }, 30000);
-    return;
-  }
+  if (process.argv.includes('--test')) return selfTest();
   if (process.argv.includes('--bar')) toggleBar();
   if (!process.argv.includes('--hidden')) openHub();
 });

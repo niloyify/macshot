@@ -1,0 +1,19 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'">
+<title>TouchKit area</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; cursor: crosshair; background: transparent; user-select: none; }
+  #shade { position: fixed; inset: 0; background: rgba(0, 0, 0, .25); }
+  #box { position: fixed; display: none; border: 2px solid #3478F6; background: rgba(52, 120, 246, .08);
+         box-shadow: 0 0 0 9999px rgba(0, 0, 0, .25); }
+  #hint { position: fixed; top: 24px; left: 50%; transform: translateX(-50%); background: rgba(20, 20, 20, .85); color: #fff;
+          font: 14px system-ui, sans-serif; padding: 8px 14px; border-radius: 8px; pointer-events: none; }
+  #size { position: fixed; display: none; background: rgba(20, 20, 20, .85); color: #fff; font: 12px system-ui, sans-serif;
+          padding: 2px 6px; border-radius: 4px; pointer-events: none; }
+</style>
+<div id="shade"></div>
+<div id="box"></div>
+<div id="size"></div>
+<div id="hint">Drag to choose an area · Esc to cancel</div>
+<script src="area.js"></script>

@@ -247,7 +247,7 @@ tool({ id: 'ocr', name: 'Photo to Text (OCR)', icon: '🔍', group: 'Safety & Fi
     const p = add(el, '<div class="panel row"><input type="file" id="f" accept="image/*"><div class="field"><label>Language</label><select id="l"><option value="ben+eng">Bangla + English</option><option value="eng">English</option><option value="ben">Bangla</option></select></div><button class="primary" id="go" disabled>Read text</button></div><img id="pv" style="max-width:100%;max-height:300px;border-radius:10px;display:none"><p class="muted" id="st"></p><textarea id="out" style="min-height:14em;font-family:inherit;font-size:16px;display:none"></textarea><div class="row"><button id="c" style="display:none">Copy text</button></div>');
     let file = null;
     $(p, '#f').onchange = (e) => { file = e.target.files[0]; $(p, '#go').disabled = !file; if (file) { const i = $(el, '#pv'); i.src = URL.createObjectURL(file); i.style.display = ''; } };
-    $(p, '#go').onclick = async () => {
+    const run = async (autoCopy) => {
       const st = $(el, '#st'); $(p, '#go').disabled = true;
       try {
         st.textContent = 'Loading reader…'; await loadScript('vendor/tesseract/tesseract.min.js');
@@ -255,10 +255,21 @@ tool({ id: 'ocr', name: 'Photo to Text (OCR)', icon: '🔍', group: 'Safety & Fi
         const w = await window.Tesseract.createWorker($(p, '#l').value, 1, { workerPath: base + 'worker.min.js', corePath: base, workerBlobURL: false, logger: (m) => { st.textContent = `${m.status} ${m.progress ? Math.round(m.progress * 100) + '%' : ''}`; } });
         const { data } = await w.recognize(file); await w.terminate();
         const o = $(el, '#out'); o.value = data.text.trim(); o.style.display = ''; $(el, '#c').style.display = ''; st.textContent = `Done · confidence ${Math.round(data.confidence)}%`;
+        if (autoCopy && o.value) { await tk.call('copyText', { text: o.value }); st.textContent += ' · copied to the clipboard'; }
       } catch (err) { st.textContent = 'Could not read: ' + (err.message || err) + ' — check your internet for the first use.'; }
       $(p, '#go').disabled = false;
     };
+    $(p, '#go').onclick = () => run(false);
     $(el, '#c').onclick = () => copy($(el, '#out').value);
+    // Desktop app: Alt+Shift+2 sends a part of the screen here; read it and copy the text.
+    const fromScreen = async () => {
+      if (!el.isConnected) return;
+      const dataUrl = await tk.call('takeOcrImage'); if (!dataUrl) return;
+      file = await (await fetch(dataUrl)).blob();
+      const i = $(el, '#pv'); i.src = dataUrl; i.style.display = '';
+      await run(true);
+    };
+    if (window.TK_PLATFORM === 'desktop') { fromScreen(); tk.onChange((what) => what === 'ocr' && fromScreen()); }
   } });
 
 // MARK: Background remover (plain backgrounds)

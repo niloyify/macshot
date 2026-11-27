@@ -110,54 +110,110 @@ tool({ id: 'awake', name: 'Keep Awake', icon: '☕', group: 'Control', desc: 'St
 
 // MARK: Capture
 
-tool({ id: 'capture', name: 'Screenshot & Record', icon: '📸', group: 'Capture', desc: 'Capture or record the screen with sound',
+tool({ id: 'capture', name: 'Screenshot & Record', icon: '📸', group: 'Capture', desc: 'Screenshots, area capture, annotate, copy text from the screen, screen and sound recording',
   render(el) {
     head(el, this);
+    const desk = window.TK_PLATFORM === 'desktop';
+    const k = (n) => `<kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>${n}</kbd>`;
     const p = add(el, `<div class="grid2">
-      <div class="panel"><h2 style="margin-top:0">📸 Screenshot</h2><p class="muted">Saved to Pictures/TouchKit and copied, ready to paste. Shortcut <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>1</kbd>.</p><div class="row"><button class="primary" id="s">Take screenshot</button><button id="sf">Open folder</button></div><img id="last" style="max-width:100%;margin-top:12px;border-radius:10px"></div>
-      <div class="panel"><h2 style="margin-top:0">⏺ Screen recording</h2><p class="muted">Screen + microphone (and computer sound on Windows). Saved to Videos/TouchKit. Shortcut <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>5</kbd>.</p><div class="row"><button class="primary" id="r"></button><button id="rf">Open folder</button></div></div></div>`);
-    $(p, '#s').onclick = async () => { const f = await tk.call('screenshot'); if (f) toast('Screenshot saved'); };
+      <div class="panel"><h2 style="margin-top:0">📸 Screenshot</h2><p class="muted">Saved to Pictures/TouchKit and copied, ready to paste.</p>
+        <div class="row">${desk ? `<button class="primary" id="a">✂️ Capture area</button>` : ''}<button class="${desk ? '' : 'primary'}" id="s">🖥 Full screen</button><button id="sf">Open folder</button></div>
+        ${desk ? `<p class="muted" style="margin-bottom:0">Area ${k(1)} · Full screen ${k(3)}</p>` : ''}</div>
+      <div class="panel"><h2 style="margin-top:0">⏺ Recording</h2><p class="muted">Screen + microphone (and computer sound on Windows). Saved to Videos/TouchKit.</p>
+        <div class="row"><button class="primary" id="r"></button>${desk ? '<button id="snd"></button>' : ''}<button id="rf">Open folder</button></div>
+        ${desk ? `<p class="muted" style="margin-bottom:0">Screen ${k(5)} · Sound only (microphone) ${k(6)}</p>` : ''}</div>
+      ${desk ? `<div class="panel"><h2 style="margin-top:0">✏️ Annotate</h2><p class="muted">Arrows, boxes, pen, highlighter, text, numbered steps and blur. Then save or copy.</p>
+        <div class="row"><button class="primary" id="an">Capture &amp; annotate</button><button id="al">Annotate last screenshot</button><button id="ao">Open a picture…</button><input type="file" id="af" accept="image/*" hidden></div>
+        <p class="muted" style="margin-bottom:0">${k(4)}</p></div>
+      <div class="panel"><h2 style="margin-top:0">🔍 Copy text from screen</h2><p class="muted">Drag over any text on the screen; TouchKit reads it (Bangla and English) and copies it.</p>
+        <div class="row"><button class="primary" id="ocr">Read text from screen</button><button id="col">🎯 Pick a colour</button></div>
+        <p class="muted" style="margin-bottom:0">Text ${k(2)} · Colour ${k('C')}</p></div>` : ''}</div>`);
+    $(p, '#s').onclick = async () => { try { const f = await tk.call('screenshot'); if (f) toast('Screenshot saved'); } catch (e) { toast(e.message); } };
     $(p, '#sf').onclick = () => tk.call('openFolder', { which: 'pictures' });
     $(p, '#rf').onclick = () => tk.call('openFolder', { which: 'videos' });
-    const show = async () => { const s = await tk.call('state'); $(p, '#r').textContent = s.recording ? '⏹ Stop recording' : '⏺ Start recording'; };
-    $(p, '#r').onclick = async () => { await tk.call('record'); setTimeout(show, 400); };
+    if (desk) {
+      $(p, '#a').onclick = () => tk.call('captureArea');
+      $(p, '#an').onclick = () => tk.call('captureAnnotate');
+      $(p, '#al').onclick = () => tk.call('annotateLast');
+      $(p, '#ao').onclick = () => $(p, '#af').click();
+      $(p, '#af').onchange = (e) => { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => tk.call('annotateImage', { dataUrl: r.result }); r.readAsDataURL(f); e.target.value = ''; };
+      $(p, '#ocr').onclick = () => tk.call('captureText');
+      $(p, '#col').onclick = () => tk.call('pickColor');
+      $(p, '#snd').onclick = async () => { await tk.call('sound'); setTimeout(show, 400); };
+    }
+    const show = async () => {
+      const s = await tk.call('state');
+      $(p, '#r').textContent = s.recording ? '⏹ Stop recording' : '⏺ Record screen';
+      if (desk) $(p, '#snd').textContent = s.sound ? '⏹ Stop sound' : '🎙 Record sound only';
+    };
+    $(p, '#r').onclick = async () => { try { await tk.call('record'); } catch (e) { toast(e.message); } setTimeout(show, 400); };
     show();
     const t = setInterval(show, 1500);
     return () => clearInterval(t);
   } });
 
-tool({ id: 'camera', name: 'Camera', icon: '🤳', group: 'Capture', desc: 'Take a photo with the webcam',
+tool({ id: 'camera', name: 'Camera', icon: '🤳', group: 'Capture', desc: 'Take a photo or record a video with the camera',
   render(el) {
-    head(el, this, 'Photos are saved to Pictures/TouchKit.');
-    const p = add(el, `<div class="panel"><video autoplay playsinline muted style="width:100%;max-height:60vh;transform:scaleX(-1)"></video>
-      <div class="row" style="margin-top:12px"><button class="primary big" id="snap">📸 Take photo</button><label class="row" style="margin:0"><input type="checkbox" id="timer"> 3-second timer</label><select id="cam"></select><div class="grow"></div><span id="msg" class="muted"></span></div></div>`);
+    head(el, this, 'Photos go to Pictures/TouchKit, videos to Videos/TouchKit (Downloads on phones and the web).');
+    const p = add(el, `<div class="panel"><video autoplay playsinline muted style="width:100%;max-height:60vh"></video>
+      <div class="row" style="margin-top:12px"><button class="primary big" id="snap">📸 Photo</button><button class="big" id="vid">🎥 Record video</button><label class="row" style="margin:0"><input type="checkbox" id="timer"> 3-second timer</label><select id="cam"></select><div class="grow"></div><span id="msg" class="muted"></span></div></div>`);
     const video = $(p, 'video');
-    let stream = null;
+    const phone = /Android|iPhone|iPad/.test(navigator.userAgent);
+    let stream = null, rec = null, mirror = !phone;
+    const stamp = () => new Date().toISOString().slice(0, 19).replace('T', ' at ').replace(/:/g, '.');
     const startCam = async (deviceId) => {
       if (stream) stream.getTracks().forEach((t) => t.stop());
       try {
         await tk.call('cameraAccess');
-        stream = await navigator.mediaDevices.getUserMedia({ video: deviceId ? { deviceId: { exact: deviceId }, width: 1920 } : { width: 1920 } });
+        const v = deviceId ? { deviceId: { exact: deviceId }, width: 1920 } : { width: 1920, facingMode: phone ? 'environment' : 'user' };
+        try { stream = await navigator.mediaDevices.getUserMedia({ video: v, audio: true }); }
+        catch { stream = await navigator.mediaDevices.getUserMedia({ video: v }); } // no microphone: video without sound
         video.srcObject = stream;
+        const track = stream.getVideoTracks()[0];
+        mirror = (track.getSettings().facingMode || (phone ? 'environment' : 'user')) === 'user';
+        video.style.transform = mirror ? 'scaleX(-1)' : '';
         const devs = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === 'videoinput');
         $(p, '#cam').innerHTML = devs.map((d, i) => `<option value="${esc(d.deviceId)}">${esc(d.label || 'Camera ' + (i + 1))}</option>`).join('');
-        if (deviceId) $(p, '#cam').value = deviceId;
+        $(p, '#cam').value = track.getSettings().deviceId || deviceId || '';
       } catch (e) {
-        $(p, '#msg').textContent = 'Camera not available. Allow TouchKit to use the camera in your system settings.';
+        $(p, '#msg').textContent = 'Camera not available. Allow TouchKit to use the camera in your settings.';
       }
+    };
+    const countdown = async () => { if ($(p, '#timer').checked) { for (let i = 3; i > 0; i--) { $(p, '#msg').textContent = i + '…'; await new Promise((r) => setTimeout(r, 1000)); } } };
+    const saved = (file) => {
+      $(p, '#msg').innerHTML = '';
+      if (window.TK_PLATFORM !== 'desktop' || !file) { $(p, '#msg').textContent = 'Saved'; return; }
+      const a = add($(p, '#msg'), `<a href="#" style="color:var(--accent)">Saved — show in folder</a>`);
+      a.onclick = (e) => { e.preventDefault(); tk.call('showFile', { file }); };
     };
     $(p, '#cam').onchange = (e) => startCam(e.target.value);
     $(p, '#snap').onclick = async () => {
-      if ($(p, '#timer').checked) { for (let i = 3; i > 0; i--) { $(p, '#msg').textContent = i + '…'; await new Promise((r) => setTimeout(r, 1000)); } }
+      await countdown();
       const c = document.createElement('canvas');
       c.width = video.videoWidth; c.height = video.videoHeight;
-      const ctx = c.getContext('2d'); ctx.translate(c.width, 0); ctx.scale(-1, 1); ctx.drawImage(video, 0, 0);
-      const file = await tk.call('savePhoto', { dataUrl: c.toDataURL('image/png') });
-      $(p, '#msg').innerHTML = ''; const a = add($(p, '#msg'), `<a href="#" style="color:var(--accent)">Saved — show in folder</a>`);
-      a.onclick = (e) => { e.preventDefault(); tk.call('showFile', { file }); };
+      const ctx = c.getContext('2d'); if (mirror) { ctx.translate(c.width, 0); ctx.scale(-1, 1); } ctx.drawImage(video, 0, 0);
+      saved(await tk.call('savePhoto', { dataUrl: c.toDataURL('image/jpeg', 0.92) }));
+    };
+    $(p, '#vid').onclick = async () => {
+      if (rec) { rec.stop(); return; }
+      if (!stream) return;
+      await countdown();
+      const type = ['video/mp4', 'video/webm;codecs=vp9,opus', 'video/webm'].find((t) => window.MediaRecorder && MediaRecorder.isTypeSupported(t)) || '';
+      const chunks = [];
+      rec = new MediaRecorder(stream, type ? { mimeType: type } : undefined);
+      rec.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+      rec.onstop = async () => {
+        const blob = new Blob(chunks, { type: rec.mimeType || 'video/webm' });
+        const name = `Video ${stamp()}.${(rec.mimeType || '').includes('mp4') ? 'mp4' : 'webm'}`;
+        rec = null; $(p, '#vid').textContent = '🎥 Record video';
+        const dataUrl = await new Promise((r) => { const f = new FileReader(); f.onload = () => r(f.result); f.readAsDataURL(blob); });
+        saved(await tk.call('saveVideo', { name, dataUrl }));
+      };
+      rec.start(1000);
+      $(p, '#vid').textContent = '⏹ Stop video'; $(p, '#msg').textContent = 'Recording…';
     };
     startCam();
-    return () => stream && stream.getTracks().forEach((t) => t.stop());
+    return () => { if (rec && rec.state !== 'inactive') rec.stop(); if (stream) stream.getTracks().forEach((t) => t.stop()); };
   } });
 
 tool({ id: 'color', name: 'Color Picker', icon: '🎨', group: 'Capture', desc: 'Pick any color on the screen and copy HEX / RGB / HSL',
@@ -178,12 +234,16 @@ tool({ id: 'color', name: 'Color Picker', icon: '🎨', group: 'Capture', desc: 
     const drawHist = () => { $(el, '#hist').innerHTML = hist.map((h) => `<div class="swatch" title="${h}" data-h="${h}" style="background:${h};width:36px;height:36px;cursor:pointer"></div>`).join('') || '<span class="muted">No colors yet</span>'; $$(el, '#hist [data-h]').forEach((s) => s.onclick = () => { show(s.dataset.h); copy(s.dataset.h); }); };
     const use = (hex) => { show(hex); copy(hex.toUpperCase()); hist.unshift(hex); store.set('colors', [...new Set(hist)].slice(0, 24)); hist.splice(0, hist.length, ...store.get('colors', [])); drawHist(); };
     $(p, '#pick').onclick = async () => {
+      if (window.TK_PLATFORM === 'desktop') { const hex = await tk.call('pickColor'); if (hex) use(hex); return; }
       if (!window.EyeDropper) return toast('Picking from the screen is not supported here — use the color box');
       try { const r = await new EyeDropper().open(); use(r.sRGBHex); } catch {}
     };
     $(p, '#manual').oninput = (e) => show(e.target.value);
     $(p, '#manual').onchange = (e) => use(e.target.value);
     show(hist[0] || '#3d7bff'); drawHist();
+    // Colours picked with Alt+Shift+C while this tool was closed.
+    const takePicked = async () => { if (!el.isConnected) return; for (const hex of (await tk.call('takePickedColors')) || []) use(hex); };
+    takePicked(); tk.onChange((what) => what === 'color' && takePicked());
   } });
 
 // MARK: Work

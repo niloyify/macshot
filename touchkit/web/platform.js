@@ -97,7 +97,9 @@
         case 'awake': return awake();
         case 'copyText': await navigator.clipboard.writeText(String(arg.text)); return true;
         case 'cameraAccess': return true;
-        case 'savePhoto': { const name = `Photo ${stamp()}.png`; download(arg.dataUrl, name); return name; }
+        case 'savePhoto': { const name = `Photo ${stamp()}.${String(arg.dataUrl).startsWith('data:image/jpeg') ? 'jpg' : 'png'}`; download(arg.dataUrl, name); return name; }
+        case 'saveVideo': download(arg.dataUrl, arg.name || `Video ${stamp()}.webm`); return arg.name;
+        case 'notify': try { if (window.Notification && Notification.permission === 'granted') new Notification(String(arg.title || 'TouchKit'), { body: String(arg.body || '') }); } catch {} return true;
         case 'saveAs': {
           const href = arg.dataUrl || URL.createObjectURL(new Blob([String(arg.text ?? '')], { type: 'text/plain' }));
           download(href, arg.name || 'file'); return arg.name;
