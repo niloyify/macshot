@@ -4,7 +4,7 @@
 
 // MARK: Income tax
 calcTool({ id: 'taxbd', name: 'Income Tax BD', icon: '🧾', group: 'Money', desc: 'Your yearly income tax from salary, step by step',
-  intro: 'Put in your salary. TouchKit applies the tax-free amount, the salary exemption, the slabs and the investment rebate.',
+  intro: 'Put in your salary. Jhuli applies the tax-free amount, the salary exemption, the slabs and the investment rebate.',
   fields: [
     { k: 'who', l: 'You are', type: 'select', v: 375000, opts: [[375000, 'General'], [425000, 'Woman or 65+ years'], [500000, 'Person with disability'], [525000, 'Freedom fighter']] },
     { k: 'sal', l: 'Monthly salary (gross)', v: 60000 },
@@ -167,7 +167,7 @@ calcTool({ id: 'budget', name: 'Budget Planner', icon: '🗂', group: 'Money', d
 // MARK: Split bill
 tool({ id: 'split', name: 'Split Bill', icon: '🧮', group: 'Money', desc: 'Share trip or party costs — who pays whom',
   render(el) {
-    head(el, this, 'Write what each person paid. "Share" is how many parts they use (2 for a couple). TouchKit finds the fewest payments to settle.');
+    head(el, this, 'Write what each person paid. "Share" is how many parts they use (2 for a couple). Jhuli finds the fewest payments to settle.');
     const p = add(el, '<div class="panel"></div>');
     const out = add(el, '<div></div>');
     rowsEditor(p, 'split.rows', [{ k: 'name', l: 'Name', type: 'text', w: 130 }, { k: 'paid', l: 'Paid', w: 110 }, { k: 'share', l: 'Share', v: 1, w: 70 }],

@@ -126,7 +126,7 @@ logTool({ id: 'sugar', name: 'Blood Sugar Log', icon: '🩸', group: 'Health', d
   } });
 
 logTool({ id: 'medicine', name: 'Medicine Reminder', icon: '💊', group: 'Health', desc: 'Today’s medicines with a reminder at each time',
-  intro: 'Keep this open (or the TouchKit app running) to get a pop-up at each time.',
+  intro: 'Keep this open (or the Jhuli app running) to get a pop-up at each time.',
   fields: [{ k: 'name', l: 'Medicine', type: 'text', ph: 'e.g. Napa 500', clear: true }, { k: 'dose', l: 'Dose', type: 'text', ph: '1 tablet after food', clear: true }, { k: 'times', l: 'Times (24 h, comma)', type: 'text', v: '08:00, 20:00' }, { k: 'until', l: 'Until', type: 'date', v: () => isoDate(addDays(new Date(), 7)) }],
   check: (v) => (!v.name ? 'Write the medicine name' : ''), addLabel: 'Add medicine',
   head: ['Medicine', 'Dose', 'Times', 'Until'], cols: (r) => [r.name, r.dose, r.times, fmtDate(r.until)],

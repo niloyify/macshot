@@ -1,4 +1,4 @@
-// All TouchKit tools. Each tool: { id, name, icon, group, desc, render(el) → optional cleanup }.
+// All Jhuli tools. Each tool: { id, name, icon, group, desc, render(el) → optional cleanup }.
 /* global tk */
 const TK = { groups: ['Control', 'Capture', 'Work', 'Freelance', 'Calculate', 'Text & Data', 'Media'], tools: [] };
 
@@ -42,7 +42,7 @@ async function accessBanner(el) {
   const slot = add(el, '<div></div>'); // keeps the banner near the top
   const s = await tk.call('state');
   if (s.accessibility) return slot.remove();
-  const b = add(slot, `<div class="banner"><div class="grow"><b>One-time permission needed.</b><br><span class="muted">To move the mouse, press keys and arrange windows, allow TouchKit under System Settings → Privacy &amp; Security → Accessibility. Then quit and reopen TouchKit.</span></div><button class="primary">Allow</button></div>`);
+  const b = add(slot, `<div class="banner"><div class="grow"><b>One-time permission needed.</b><br><span class="muted">To move the mouse, press keys and arrange windows, allow Jhuli under System Settings → Privacy &amp; Security → Accessibility. Then quit and reopen Jhuli.</span></div><button class="primary">Allow</button></div>`);
   $(b, 'button').onclick = () => tk.call('askAccess');
 }
 
@@ -116,16 +116,16 @@ tool({ id: 'capture', name: 'Screenshot & Record', icon: '📸', group: 'Capture
     const desk = window.TK_PLATFORM === 'desktop';
     const k = (n) => `<kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>${n}</kbd>`;
     const p = add(el, `<div class="grid2">
-      <div class="panel"><h2 style="margin-top:0">📸 Screenshot</h2><p class="muted">Saved to Pictures/TouchKit and copied, ready to paste.</p>
+      <div class="panel"><h2 style="margin-top:0">📸 Screenshot</h2><p class="muted">Saved to Pictures/Jhuli and copied, ready to paste.</p>
         <div class="row">${desk ? `<button class="primary" id="a">✂️ Capture area</button>` : ''}<button class="${desk ? '' : 'primary'}" id="s">🖥 Full screen</button><button id="sf">Open folder</button></div>
         ${desk ? `<p class="muted" style="margin-bottom:0">Area ${k(1)} · Full screen ${k(3)}</p>` : ''}</div>
-      <div class="panel"><h2 style="margin-top:0">⏺ Recording</h2><p class="muted">Screen + microphone (and computer sound on Windows). Saved to Videos/TouchKit.</p>
+      <div class="panel"><h2 style="margin-top:0">⏺ Recording</h2><p class="muted">Screen + microphone (and computer sound on Windows). Saved to Videos/Jhuli.</p>
         <div class="row"><button class="primary" id="r"></button>${desk ? '<button id="snd"></button>' : ''}<button id="rf">Open folder</button></div>
         ${desk ? `<p class="muted" style="margin-bottom:0">Screen ${k(5)} · Sound only (microphone) ${k(6)}</p>` : ''}</div>
       ${desk ? `<div class="panel"><h2 style="margin-top:0">✏️ Annotate</h2><p class="muted">Arrows, boxes, pen, highlighter, text, numbered steps and blur. Then save or copy.</p>
         <div class="row"><button class="primary" id="an">Capture &amp; annotate</button><button id="al">Annotate last screenshot</button><button id="ao">Open a picture…</button><input type="file" id="af" accept="image/*" hidden></div>
         <p class="muted" style="margin-bottom:0">${k(4)}</p></div>
-      <div class="panel"><h2 style="margin-top:0">🔍 Copy text from screen</h2><p class="muted">Drag over any text on the screen; TouchKit reads it (Bangla and English) and copies it.</p>
+      <div class="panel"><h2 style="margin-top:0">🔍 Copy text from screen</h2><p class="muted">Drag over any text on the screen; Jhuli reads it (Bangla and English) and copies it.</p>
         <div class="row"><button class="primary" id="ocr">Read text from screen</button><button id="col">🎯 Pick a colour</button></div>
         <p class="muted" style="margin-bottom:0">Text ${k(2)} · Colour ${k('C')}</p></div>` : ''}</div>`);
     $(p, '#s').onclick = async () => { try { const f = await tk.call('screenshot'); if (f) toast('Screenshot saved'); } catch (e) { toast(e.message); } };
@@ -154,7 +154,7 @@ tool({ id: 'capture', name: 'Screenshot & Record', icon: '📸', group: 'Capture
 
 tool({ id: 'camera', name: 'Camera', icon: '🤳', group: 'Capture', desc: 'Take a photo or record a video with the camera',
   render(el) {
-    head(el, this, 'Photos go to Pictures/TouchKit, videos to Videos/TouchKit (Downloads on phones and the web).');
+    head(el, this, 'Photos go to Pictures/Jhuli, videos to Videos/Jhuli (Downloads on phones and the web).');
     const p = add(el, `<div class="panel"><video autoplay playsinline muted style="width:100%;max-height:60vh"></video>
       <div class="row" style="margin-top:12px"><button class="primary big" id="snap">📸 Photo</button><button class="big" id="vid">🎥 Record video</button><label class="row" style="margin:0"><input type="checkbox" id="timer"> 3-second timer</label><select id="cam"></select><div class="grow"></div><span id="msg" class="muted"></span></div></div>`);
     const video = $(p, 'video');
@@ -176,7 +176,7 @@ tool({ id: 'camera', name: 'Camera', icon: '🤳', group: 'Capture', desc: 'Take
         $(p, '#cam').innerHTML = devs.map((d, i) => `<option value="${esc(d.deviceId)}">${esc(d.label || 'Camera ' + (i + 1))}</option>`).join('');
         $(p, '#cam').value = track.getSettings().deviceId || deviceId || '';
       } catch (e) {
-        $(p, '#msg').textContent = 'Camera not available. Allow TouchKit to use the camera in your settings.';
+        $(p, '#msg').textContent = 'Camera not available. Allow Jhuli to use the camera in your settings.';
       }
     };
     const countdown = async () => { if ($(p, '#timer').checked) { for (let i = 3; i > 0; i--) { $(p, '#msg').textContent = i + '…'; await new Promise((r) => setTimeout(r, 1000)); } } };
@@ -323,12 +323,12 @@ tool({ id: 'timer', name: 'Focus Timer', icon: '⏱', group: 'Work', desc: 'Pomo
     head(el, this, 'Work 25 minutes, rest 5. A sound and notification tell you when time is up.');
     const p = add(el, `<div class="panel" style="text-align:center"><div class="row" style="justify-content:center"><button data-m="25">Focus 25</button><button data-m="50">Focus 50</button><button data-m="5">Break 5</button><button data-m="15">Break 15</button><button data-m="0">Stopwatch</button></div><div class="big-num" id="n" style="font-size:96px;margin:20px 0">25:00</div><div class="row" style="justify-content:center"><button class="primary big" id="go">Start</button><button class="big" id="reset">Reset</button></div><p class="muted" id="done"></p></div>`);
     let total = 25 * 60e3, left = total, running = false, last = 0, up = false;
-    const draw = () => { const ms = up ? left : Math.max(left, 0); const s = Math.ceil(ms / 1000) - (up ? 0 : 0); const v = up ? Math.floor(ms / 1000) : s; $(p, '#n').textContent = `${String(Math.floor(v / 60)).padStart(2, '0')}:${String(v % 60).padStart(2, '0')}`; $(p, '#go').textContent = running ? 'Pause' : 'Start'; document.title = running ? `${$(p, '#n').textContent} — TouchKit` : 'TouchKit'; };
+    const draw = () => { const ms = up ? left : Math.max(left, 0); const s = Math.ceil(ms / 1000) - (up ? 0 : 0); const v = up ? Math.floor(ms / 1000) : s; $(p, '#n').textContent = `${String(Math.floor(v / 60)).padStart(2, '0')}:${String(v % 60).padStart(2, '0')}`; $(p, '#go').textContent = running ? 'Pause' : 'Start'; document.title = running ? `${$(p, '#n').textContent} — Jhuli` : 'Jhuli'; };
     const beep = () => { try { const a = new AudioContext(); [0, .3, .6].forEach((t) => { const o = a.createOscillator(); o.frequency.value = 880; o.connect(a.destination); o.start(a.currentTime + t); o.stop(a.currentTime + t + .15); }); } catch {} };
     const tick = () => {
       if (!running) return; const now = Date.now(); const dt = now - last; last = now;
       left += up ? dt : -dt;
-      if (!up && left <= 0) { running = false; left = 0; beep(); new Notification('TouchKit', { body: 'Time is up!' }); const d = store.get('focusDone', 0) + 1; store.set('focusDone', d); $(p, '#done').textContent = `Sessions finished: ${d}`; }
+      if (!up && left <= 0) { running = false; left = 0; beep(); new Notification('Jhuli', { body: 'Time is up!' }); const d = store.get('focusDone', 0) + 1; store.set('focusDone', d); $(p, '#done').textContent = `Sessions finished: ${d}`; }
       draw();
     };
     $$(p, '[data-m]').forEach((b) => b.onclick = () => { up = b.dataset.m === '0'; total = +b.dataset.m * 60e3; left = up ? 0 : total; running = false; draw(); });
@@ -336,7 +336,7 @@ tool({ id: 'timer', name: 'Focus Timer', icon: '⏱', group: 'Work', desc: 'Pomo
     $(p, '#reset').onclick = () => { running = false; left = up ? 0 : total; draw(); };
     $(p, '#done').textContent = `Sessions finished: ${store.get('focusDone', 0)}`;
     const t = setInterval(tick, 250); draw();
-    return () => { clearInterval(t); document.title = 'TouchKit'; };
+    return () => { clearInterval(t); document.title = 'Jhuli'; };
   } });
 
 tool({ id: 'clock', name: 'World Clock', icon: '🌍', group: 'Work', desc: 'Your clients’ time zones at a glance',
@@ -788,7 +788,7 @@ tool({ id: 'voice', name: 'Voice Recorder', icon: '🎙', group: 'Media', desc: 
 tool({ id: 'speak', name: 'Read Aloud', icon: '🔊', group: 'Media', desc: 'Your device reads any text out loud — Bangla too',
   render(el) {
     head(el, this, 'Paste text and press Play. Pick a voice for your language.');
-    const p = add(el, `<div class="panel"><textarea id="t" style="font-family:inherit;font-size:15px">${esc(store.get('speakText', 'Hello! TouchKit can read text out loud.'))}</textarea>
+    const p = add(el, `<div class="panel"><textarea id="t" style="font-family:inherit;font-size:15px">${esc(store.get('speakText', 'Hello! Jhuli can read text out loud.'))}</textarea>
       <div class="row" style="margin-top:10px"><select id="v" class="grow"></select><label style="margin:0">Speed</label><input type="range" id="r" min="0.5" max="2" step="0.1" value="1"><button class="primary big" id="go">▶ Play</button><button class="big" id="st">⏹</button></div><p class="muted" id="m"></p></div>`);
     if (!('speechSynthesis' in window)) { $(p, '#m').textContent = 'This device cannot read text aloud.'; return; }
     const fill = () => {
