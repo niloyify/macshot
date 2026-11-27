@@ -104,3 +104,24 @@ details summary { cursor: pointer; }
   table { font-size: 13px; display: block; overflow-x: auto; }
 }
 body.is-mac .top { padding-left: 84px; -webkit-app-region: drag; } body.is-mac .top button { -webkit-app-region: no-drag; }
+
+/* result cards and form tools */
+.res { margin-bottom: 14px; }
+.res .card { cursor: default; }
+.res .card:hover { transform: none; border-color: var(--line); }
+.res .card span { display: block !important; font-size: 12px; }
+.res .card b { font-size: 21px; margin: 4px 0 0; word-break: break-word; }
+.res .card small { color: var(--dim); display: block; font-size: 12px; margin-top: 2px; }
+.res .card.main { background: var(--accent); border-color: var(--accent); color: #fff; }
+.res .card.main span, .res .card.main small { color: rgba(255,255,255,.85); }
+.note { font-size: 13px; }
+label.check { color: var(--text); font-size: 15px; margin: 0; gap: 8px; }
+button.small { padding: 4px 10px; font-size: 13px; }
+.rowsed td { padding: 4px; }
+.pill { display: inline-block; padding: 2px 9px; border-radius: 99px; font-size: 12px; background: var(--card2); }
+.pill.ok { background: rgba(31,164,99,.15); color: var(--ok); } .pill.bad { background: rgba(229,72,77,.14); color: var(--bad); } .pill.warn { background: rgba(245,165,36,.16); color: #b7770c; }
+.steps { padding-left: 20px; } .steps li { margin-bottom: 6px; }
+.compass { width: 220px; height: 220px; border-radius: 50%; border: 2px solid var(--line); position: relative; margin: 10px auto; background: var(--card2); }
+.compass .needle { position: absolute; left: 50%; top: 10px; bottom: 50%; width: 4px; margin-left: -2px; background: var(--ok); transform-origin: bottom center; border-radius: 2px; }
+.compass .n { position: absolute; top: 4px; left: 50%; transform: translateX(-50%); font-weight: 700; color: var(--bad); }
+@media (max-width: 860px) { .res.cards { grid-template-columns: 1fr 1fr; } .res .card b { font-size: 18px; } }
