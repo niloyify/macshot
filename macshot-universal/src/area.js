@@ -4,6 +4,13 @@ const shade = document.getElementById('shade');
 const size = document.getElementById('size');
 let start = null;
 
+// The same picker is used for screenshots, reading text and annotating.
+const mode = new URLSearchParams(location.search).get('mode');
+document.getElementById('hint').textContent = {
+  text: 'Drag over the text you want to copy · Esc to cancel',
+  annotate: 'Drag to choose an area to draw on · Esc to cancel',
+}[mode] || 'Drag to choose an area · Esc to cancel';
+
 function rectFrom(e) {
   const x = Math.min(start.x, e.clientX), y = Math.min(start.y, e.clientY);
   return { x, y, width: Math.abs(e.clientX - start.x), height: Math.abs(e.clientY - start.y) };

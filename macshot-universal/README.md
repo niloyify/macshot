@@ -1,6 +1,6 @@
 # MacShot for Windows, macOS and Linux
 
-The same MacShot, now on every computer. It lives in the system tray (menu bar on macOS) as a pair of eyes that turns red while recording.
+The same MacShot, now on every computer, with the everyday tools you need in one app. It lives in the system tray (menu bar on macOS) as a pair of eyes that turns red while recording.
 
 | Shortcut | What it does |
 | --- | --- |
@@ -8,8 +8,16 @@ The same MacShot, now on every computer. It lives in the system tray (menu bar o
 | Alt+Shift+3 | **Capture Full Screen** (the screen under the mouse pointer) |
 | Alt+Shift+5 | **Start / Stop Recording** the screen with your microphone (and the computer's sound on Windows) |
 | Alt+Shift+6 | **Start / Stop Sound Recording**: only the sound around you, from the microphone |
+| Alt+Shift+2 | **Copy Text from Screen** (OCR): drag over any text, it is read and copied. English and Bangla |
+| Alt+Shift+4 | **Capture and Annotate**: arrows, boxes, pen, highlighter, text, numbered steps and blur, then Save or Copy |
+| Alt+Shift+C | **Pick Colour from Screen**: magnifier, click copies `#RRGGBB` (HEX, RGB and HSL kept in Colours) |
+| Alt+Shift+V | **Clipboard History**: last 100 texts and 20 pictures, search, pin, copy again |
+| Alt+Shift+N | **Quick Notes**: saved by themselves |
+| Alt+Shift+T | **Timer and Stopwatch**: presets, laps, a sound and a notification when time is up |
+| Alt+Shift+Q | **QR Code**: from any text or link (filled from the clipboard), Wi-Fi QR, copy or save PNG |
+| Alt+Shift+M | **All Tools** window (also has the **Image Converter**: PNG / JPG / WebP, smaller sizes, many files at once) |
 
-Screenshots are saved as PNG in `Pictures/MacShot` and copied to the clipboard. Recordings go to `Videos/MacShot` (`Movies/MacShot` on macOS): screen as MP4, sound as M4A. The tray menu also opens both folders and can start MacShot at login (Windows and macOS).
+Screenshots are saved as PNG in `Pictures/MacShot` and copied to the clipboard. Recordings go to `Videos/MacShot` (`Movies/MacShot` on macOS): screen as MP4, sound as M4A. The tray menu has every tool, opens both folders and can start MacShot at login (Windows and macOS). Converted pictures go to `Pictures/MacShot/Converted`. Reading text downloads the language data once (needs the internet the first time).
 
 ## Download
 
@@ -30,4 +38,4 @@ npm start          # run it
 npm run dist       # build installers for this OS into dist/
 ```
 
-`MacShot --test` takes a full and an area screenshot, records 4 seconds of screen and 4 seconds of sound, then quits (used to check a build).
+`MacShot --test` checks every feature (screenshots, clipboard history, colour picker, annotate, QR, text reading, converter, notes, timer, stopwatch, 4 s of screen and 4 s of sound recording), prints the results and quits (used to check a build).

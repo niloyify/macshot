@@ -44,8 +44,11 @@ jobs:
         with:
           name: MacShot ${{ github.ref_name }} (Windows, macOS, Linux)
           body: |
-            MacShot for every computer: screenshots, screen recording and sound recording.
+            MacShot for every computer: screenshots, screen and sound recording, plus everyday tools.
             Alt+Shift+1 area · Alt+Shift+3 full screen · Alt+Shift+5 screen recording · Alt+Shift+6 sound recording
+            Alt+Shift+2 copy text from screen · Alt+Shift+4 capture and annotate · Alt+Shift+C colour picker
+            Alt+Shift+V clipboard history · Alt+Shift+N quick notes · Alt+Shift+T timer and stopwatch · Alt+Shift+Q QR code
+            Alt+Shift+M all tools (also image converter)
 
             - Windows: MacShot-Setup-*.exe (installer) or MacShot-Portable-*.exe (no install)
             - macOS: MacShot-mac-universal.zip (unzip, move MacShot to Applications)

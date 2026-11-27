@@ -1,0 +1,188 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; connect-src 'self' data: blob: https://cdn.jsdelivr.net; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; media-src 'self' data:">
+<title>MacShot Tools</title>
+<link rel="stylesheet" href="tools.css">
+<style>
+  body { display: grid; grid-template-columns: 210px 1fr; height: 100vh; overflow: hidden; }
+  nav { background: var(--side); border-right: 1px solid var(--line); padding: 14px 8px; display: flex; flex-direction: column; gap: 2px; overflow-y: auto; }
+  nav h1 { font-size: 15px; margin: 0 8px 10px; display: flex; align-items: center; gap: 7px; }
+  nav h1 span { font-size: 18px; }
+  nav button { display: flex; justify-content: space-between; align-items: center; text-align: left; border: 0; background: transparent; padding: 7px 10px; border-radius: 7px; }
+  nav button.on { background: var(--accent); color: #fff; }
+  nav button.on kbd { color: #fff; border-color: rgba(255,255,255,.5); }
+  nav .sep { height: 1px; background: var(--line); margin: 8px 6px; }
+  nav .quick { margin-top: auto; font-size: 12px; padding: 8px; color: var(--muted); display: grid; grid-template-columns: auto 1fr; gap: 4px 8px; align-items: center; }
+  main { overflow: hidden; display: flex; flex-direction: column; }
+  section { display: none; flex: 1; flex-direction: column; overflow: hidden; padding: 18px 22px; gap: 12px; }
+  section.on { display: flex; }
+  section h2 { margin: 0; font-size: 20px; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .grow { flex: 1; }
+  .scroll { overflow-y: auto; flex: 1; min-height: 0; }
+  /* Clipboard */
+  .clip { display: flex; gap: 10px; align-items: center; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); margin-bottom: 6px; cursor: pointer; }
+  .clip:hover, .clip.sel { border-color: var(--accent); }
+  .clip .body { flex: 1; min-width: 0; }
+  .clip .txt { white-space: pre-wrap; word-break: break-word; max-height: 3.9em; overflow: hidden; }
+  .clip img { max-height: 64px; max-width: 160px; border-radius: 5px; display: block; }
+  .clip .meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .clip .acts { display: flex; gap: 4px; opacity: .2; }
+  .clip:hover .acts, .clip.sel .acts { opacity: 1; }
+  .pinned { color: var(--accent); }
+  .empty { color: var(--muted); text-align: center; padding: 40px 0; }
+  /* Notes */
+  #notes .wrap { display: grid; grid-template-columns: 220px 1fr; gap: 12px; flex: 1; min-height: 0; }
+  #noteList { overflow-y: auto; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); }
+  #noteList div { padding: 8px 10px; border-bottom: 1px solid var(--line); cursor: pointer; }
+  #noteList div.on { background: var(--hover); box-shadow: inset 3px 0 0 var(--accent); }
+  #noteList b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+  #noteList small { color: var(--muted); }
+  #noteText { resize: none; height: 100%; width: 100%; font-size: 15px; line-height: 1.5; padding: 12px; }
+  /* Timer */
+  .clock { font: 600 64px ui-monospace, Menlo, Consolas, monospace; letter-spacing: 1px; margin: 4px 0; font-variant-numeric: tabular-nums; }
+  .clock.done { color: var(--danger); animation: blink 1s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: .3; } }
+  .card { border: 1px solid var(--line); border-radius: 12px; background: var(--panel); padding: 16px 18px; }
+  #timer .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  #laps { max-height: 180px; overflow-y: auto; font: 13px ui-monospace, Menlo, monospace; }
+  #laps div { display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px solid var(--line); }
+  input.num { width: 64px; text-align: center; }
+  /* QR */
+  #qrOut { display: grid; place-items: center; background: #fff; border-radius: 12px; padding: 14px; width: max-content; }
+  #qrText { width: 100%; height: 90px; resize: vertical; }
+  /* OCR */
+  #ocr .wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; flex: 1; min-height: 0; }
+  #ocrImageBox { border: 1px dashed var(--line); border-radius: 9px; display: grid; place-items: center; overflow: auto; background: var(--panel); }
+  #ocrImageBox img { max-width: 100%; }
+  #ocrText { resize: none; height: 100%; width: 100%; font-size: 15px; padding: 12px; }
+  /* Colours */
+  .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+  .sw { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel); }
+  .sw .chip { height: 56px; }
+  .sw .vals { padding: 6px 8px; font: 12px ui-monospace, Menlo, monospace; display: grid; gap: 3px; }
+  .sw .vals span { cursor: pointer; display: flex; justify-content: space-between; }
+  .sw .vals span:hover { color: var(--accent); }
+  /* Converter */
+  #drop { border: 2px dashed var(--line); border-radius: 12px; padding: 26px; text-align: center; color: var(--muted); cursor: pointer; }
+  #drop.over { border-color: var(--accent); color: var(--accent); }
+  .out { display: flex; justify-content: space-between; gap: 8px; align-items: center; padding: 6px 10px; border-bottom: 1px solid var(--line); }
+  #toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: rgba(20,20,20,.9); color: #fff; padding: 7px 14px; border-radius: 8px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  #toast.show { opacity: 1; }
+</style>
+<nav id="nav">
+  <h1><span>👀</span> MacShot Tools</h1>
+  <button data-tab="clipboard">Clipboard <kbd>⌥⇧V</kbd></button>
+  <button data-tab="notes">Quick Notes <kbd>⌥⇧N</kbd></button>
+  <button data-tab="timer">Timer &amp; Stopwatch <kbd>⌥⇧T</kbd></button>
+  <button data-tab="qr">QR Code <kbd>⌥⇧Q</kbd></button>
+  <button data-tab="ocr">Text from Image <kbd>⌥⇧2</kbd></button>
+  <button data-tab="colors">Colours <kbd>⌥⇧C</kbd></button>
+  <button data-tab="convert">Image Converter</button>
+  <div class="sep"></div>
+  <button id="goAnnotate">Capture &amp; Annotate <kbd>⌥⇧4</kbd></button>
+  <button id="goAnnotateLast">Annotate a Picture</button>
+  <div class="quick">
+    <kbd>⌥⇧1</kbd><span>Capture area</span>
+    <kbd>⌥⇧3</kbd><span>Full screen</span>
+    <kbd>⌥⇧5</kbd><span>Screen recording</span>
+    <kbd>⌥⇧6</kbd><span>Sound recording</span>
+    <kbd>⌥⇧M</kbd><span>This window</span>
+  </div>
+</nav>
+<main>
+  <section id="clipboard">
+    <div class="row"><h2 class="grow">Clipboard History</h2>
+      <label class="muted"><input type="checkbox" id="clipPause"> Pause</label>
+      <button id="clipClear" class="danger">Clear</button></div>
+    <input type="search" id="clipSearch" placeholder="Search what you copied…  (↑ ↓ to choose, Enter to copy)">
+    <div class="scroll" id="clipList"></div>
+    <div class="muted" style="font-size:12px">MacShot remembers the last 100 texts and 20 pictures you copy. Click one to copy it again. 📌 keeps it forever.</div>
+  </section>
+
+  <section id="notes">
+    <div class="row"><h2 class="grow">Quick Notes</h2>
+      <input type="search" id="noteSearch" placeholder="Search notes">
+      <button id="noteNew" class="primary">+ New</button>
+      <button id="noteCopy">Copy</button>
+      <button id="noteDelete" class="danger">Delete</button></div>
+    <div class="wrap"><div id="noteList"></div><textarea id="noteText" placeholder="Write anything… it is saved by itself."></textarea></div>
+  </section>
+
+  <section id="timer">
+    <h2>Timer &amp; Stopwatch</h2>
+    <div class="cols">
+      <div class="card">
+        <b>Timer</b>
+        <div class="clock" id="tClock">05:00</div>
+        <div class="row" style="margin-bottom:10px">
+          <input class="num" type="number" id="tH" min="0" max="23" value="0" title="Hours"> h
+          <input class="num" type="number" id="tM" min="0" max="59" value="5" title="Minutes"> m
+          <input class="num" type="number" id="tS" min="0" max="59" value="0" title="Seconds"> s
+        </div>
+        <div class="row" style="margin-bottom:10px" id="presets"></div>
+        <input type="text" id="tLabel" placeholder="What is it for? (optional)" style="width:100%;margin-bottom:10px">
+        <div class="row"><button class="primary" id="tStart">Start</button><button id="tReset">Reset</button></div>
+      </div>
+      <div class="card">
+        <b>Stopwatch</b>
+        <div class="clock" id="sClock">00:00.0</div>
+        <div class="row" style="margin-bottom:10px"><button class="primary" id="sStart">Start</button><button id="sLap">Lap</button><button id="sReset">Reset</button></div>
+        <div id="laps"></div>
+      </div>
+    </div>
+    <div class="muted">The timer keeps running when you close this window. MacShot tells you and plays a sound when time is up.</div>
+  </section>
+
+  <section id="qr">
+    <h2>QR Code</h2>
+    <textarea id="qrText" placeholder="Type or paste a link, text, phone number, Wi-Fi…"></textarea>
+    <div class="row">
+      <button id="qrPaste">Paste from Clipboard</button>
+      <select id="qrSize"><option value="256">Small</option><option value="384" selected>Medium</option><option value="768">Large</option></select>
+      <span class="grow"></span>
+      <button id="qrCopy">Copy Picture</button><button id="qrSave" class="primary">Save PNG</button></div>
+    <div class="row" style="align-items:flex-start"><div id="qrOut" style="display:none"><canvas id="qrCanvas"></canvas></div>
+      <div class="card grow" style="max-width:340px"><b>Wi-Fi QR</b><p class="muted" style="margin:4px 0 8px">Phones can join your Wi-Fi by scanning it.</p>
+        <input type="text" id="wifiName" placeholder="Wi-Fi name" style="width:100%;margin-bottom:6px">
+        <input type="text" id="wifiPass" placeholder="Password" style="width:100%;margin-bottom:6px">
+        <button id="wifiMake">Make Wi-Fi QR</button></div></div>
+  </section>
+
+  <section id="ocr">
+    <div class="row"><h2 class="grow">Text from Image</h2>
+      <select id="ocrLang" title="Language"><option value="eng">English</option><option value="ben">Bangla</option><option value="eng+ben">English + Bangla</option></select>
+      <button id="ocrScreen" class="primary">Read from Screen</button>
+      <button id="ocrOpen">Open Picture…</button>
+      <button id="ocrCopy">Copy Text</button></div>
+    <div class="muted" id="ocrStatus">Press Alt+Shift+2 anywhere, drag over some text, and MacShot copies it for you. You can also drop a picture here.</div>
+    <div class="wrap"><div id="ocrImageBox"><span class="muted">No picture yet</span></div><textarea id="ocrText" placeholder="The text appears here"></textarea></div>
+    <input type="file" id="ocrFile" accept="image/*" hidden>
+  </section>
+
+  <section id="colors">
+    <div class="row"><h2 class="grow">Colours</h2>
+      <input type="color" id="colorInput" value="#0a84ff" title="Choose a colour">
+      <button id="colorPick" class="primary">Pick from Screen</button>
+      <button id="colorClear" class="danger">Clear</button></div>
+    <div class="muted">Alt+Shift+C picks a colour anywhere on the screen and copies its code. Click a code below to copy it.</div>
+    <div class="scroll"><div class="swatches" id="swatches"></div></div>
+  </section>
+
+  <section id="convert">
+    <h2>Image Converter</h2>
+    <div id="drop">Drop pictures here or click to choose<br><small>PNG, JPG, WebP, GIF, BMP…</small></div>
+    <input type="file" id="convFiles" accept="image/*" multiple hidden>
+    <div class="row">
+      Make: <select id="convFormat"><option value="image/png">PNG</option><option value="image/jpeg" selected>JPG</option><option value="image/webp">WebP</option></select>
+      Quality: <input type="number" class="num" id="convQuality" min="10" max="100" value="85">%
+      Size: <select id="convSize"><option value="1">Same size</option><option value="0.75">75%</option><option value="0.5">50%</option><option value="0.25">25%</option><option value="w1920">Max 1920 wide</option><option value="w1280">Max 1280 wide</option><option value="w800">Max 800 wide</option></select>
+      <span class="grow"></span><button id="convOpen">Open Folder</button>
+    </div>
+    <div class="scroll" id="convOut"></div>
+  </section>
+</main>
+<div id="toast"></div>
+<script src="vendor/qrcode.min.js"></script>
+<script src="vendor/tesseract/tesseract.min.js"></script>
+<script src="tools.js"></script>

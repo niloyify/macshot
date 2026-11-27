@@ -1,8 +1,8 @@
 {
   "name": "macshot",
   "productName": "MacShot",
-  "version": "2.0.0",
-  "description": "MacShot: screenshots, screen recording and sound recording for Windows, macOS and Linux",
+  "version": "2.1.0",
+  "description": "MacShot: screenshots, screen and sound recording, OCR, annotate, colour picker, clipboard history, notes, timer, QR codes and an image converter for Windows, macOS and Linux",
   "main": "src/main.js",
   "author": {
     "name": "niloyify",

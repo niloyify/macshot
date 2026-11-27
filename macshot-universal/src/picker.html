@@ -1,0 +1,19 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; script-src 'self'; style-src 'self' 'unsafe-inline'">
+<title>MacShot colour picker</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; cursor: crosshair; background: #000; user-select: none; }
+  #screen { position: fixed; inset: 0; width: 100%; height: 100%; }
+  #lens { position: fixed; display: none; pointer-events: none; width: 154px; border-radius: 12px; overflow: hidden;
+          background: #111; box-shadow: 0 6px 24px rgba(0,0,0,.5), 0 0 0 2px #fff; }
+  #zoom { display: block; width: 154px; height: 154px; image-rendering: pixelated; }
+  #label { display: flex; align-items: center; gap: 6px; padding: 6px 8px; color: #fff; font: 600 13px ui-monospace, Menlo, monospace; }
+  #swatch { width: 14px; height: 14px; border-radius: 4px; box-shadow: 0 0 0 1px rgba(255,255,255,.6); }
+  #hint { position: fixed; top: 24px; left: 50%; transform: translateX(-50%); background: rgba(20, 20, 20, .85); color: #fff;
+          font: 14px system-ui, sans-serif; padding: 8px 14px; border-radius: 8px; pointer-events: none; }
+</style>
+<canvas id="screen"></canvas>
+<div id="lens"><canvas id="zoom" width="11" height="11"></canvas><div id="label"><span id="swatch"></span><span id="hex"></span></div></div>
+<div id="hint">Click to copy a colour · arrow keys move one pixel · Esc to cancel</div>
+<script src="picker.js"></script>
