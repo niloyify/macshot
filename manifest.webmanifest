@@ -1,7 +1,9 @@
 {
   "name": "TouchKit",
   "short_name": "TouchKit",
-  "description": "All your everyday tools in one simple app.",
+  "description": "All your everyday tools in one simple app: 127 tools, camera, voice, PDF, OCR and more.",
+  "id": "./",
+  "orientation": "any",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

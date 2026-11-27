@@ -32,7 +32,9 @@
     switch (cmd) {
       case 'state': return Object.assign(await base(cmd, arg), { platform: 'android', app: 'android', canCapture: false });
       case 'saveAs': return save(arg.name, arg.dataUrl, arg.text);
-      case 'savePhoto': return save(`Photo ${Date.now()}.png`, arg.dataUrl);
+      case 'savePhoto': return save(`Photo ${Date.now()}.${String(arg.dataUrl).startsWith('data:image/jpeg') ? 'jpg' : 'png'}`, arg.dataUrl);
+      case 'saveVideo': return save(arg.name || `Video ${Date.now()}.webm`, arg.dataUrl);
+      case 'notify': A.notify(String(arg.title || 'TouchKit'), String(arg.body || '')); return true;
       case 'pdf': A.printHtml(String(arg.html || '')); return 'print';
       case 'openUrl': A.openUrl(String(arg.url)); return true;
       case 'copyText': A.copyText(String(arg.text ?? '')); return true;

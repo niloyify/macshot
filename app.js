@@ -20,6 +20,20 @@
   }
   function bindCards(root) { root.querySelectorAll('.card[data-id]').forEach((c) => c.onclick = () => open(c.dataset.id)); }
 
+  // On iPhone / iPad (Safari) and Android browsers, show how to install TouchKit as an app.
+  function installHint() {
+    if (desktop || window.AndroidTK || !location.protocol.startsWith('http')) return '';
+    const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+    if (standalone || store.get('hideInstall', false)) return '';
+    const ua = navigator.userAgent;
+    const how = /iPhone|iPad|iPod/.test(ua) ? 'In Safari, tap <b>Share</b> (□↑) → <b>Add to Home Screen</b>. TouchKit then opens like an app and works offline.'
+      : /Android/.test(ua) ? 'Tap the browser menu (⋮) → <b>Install app</b> or <b>Add to Home screen</b>, or get the Android app (APK) from the downloads page.'
+      : '';
+    if (!how) return '';
+    setTimeout(() => { const b = document.getElementById('hideInstall'); if (b) b.onclick = () => { store.set('hideInstall', true, true); b.closest('.banner').remove(); }; });
+    return `<div class="banner info"><div class="grow"><b>📲 Install TouchKit on this phone</b><br><span class="muted">${how}</span></div><button id="hideInstall">OK</button></div>`;
+  }
+
   // MARK: home
   function home(el) {
     const user = TK.account && TK.account.user;
@@ -27,7 +41,7 @@
     el.innerHTML = `<div class="hero"><h1>${hello}</h1><p class="sub">All your everyday tools in one place — on your phone, laptop and the web.</p>
       <input id="hs" class="hero-search" type="search" placeholder="What do you want to do? e.g. invoice, QR, convert…" autocomplete="off"></div>
       ${user || ((window.TK_CONFIG || {}).accounts === false && !window.TK_FIREBASE) ? '' : `<div class="banner info"><div class="grow"><b>Use TouchKit on all your devices</b><br><span class="muted">Create a free account to sync notes, to-dos, time tracking and invoices between your phone and computer.</span></div><button class="primary" id="join">Log in / Sign up</button></div>`}
-      <div id="results"></div><div id="blocks"></div>`;
+      ${installHint()}<div id="results"></div><div id="blocks"></div>`;
     const blocks = $(el, '#blocks');
     const f = favs().map((id) => TK.tools.find((t) => t.id === id)).filter(Boolean);
     if (f.length) { add(blocks, `<h2>⭐ Favourites</h2>`); bindCards(add(blocks, `<div class="cards">${f.map(card).join('')}</div>`)); }
